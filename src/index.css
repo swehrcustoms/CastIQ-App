@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --castiq-blue-dark: #0c1f3d;
+    --castiq-blue: #1a3a5c;
+    --castiq-teal: #06b6d4;
+    --castiq-green: #22c55e;
+    --castiq-yellow: #eab308;
+    --castiq-gray: #6b7280;
+    --castiq-red: #ef4444;
+    --castiq-white: #f8fafc;
+    --castiq-muted: #94a3b8;
+  }
+
+  html {
+    background-color: var(--castiq-blue-dark);
+    color: var(--castiq-white);
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Inter var', system-ui, sans-serif;
+  }
+}

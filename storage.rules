@@ -1,0 +1,54 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isImageFile() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    function isUnder10MB() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+
+    function isValidSonarFile() {
+      return request.resource.contentType.matches('application/.*') ||
+             request.resource.name.matches('.*\\.(gpx|slg|sl2|sl3)');
+    }
+
+    function isUnder100MB() {
+      return request.resource.size < 100 * 1024 * 1024;
+    }
+
+    // User report photos: users/{uid}/reports/{fileName}
+    match /users/{uid}/reports/{fileName} {
+      allow read: if true;
+      allow create: if isOwner(uid) && isImageFile() && isUnder10MB();
+      allow delete: if isOwner(uid) || isAdmin();
+    }
+
+    // Sonar track uploads: sonar/{uid}/{fileName}
+    match /sonar/{uid}/{fileName} {
+      allow read: if isAdmin();
+      allow create: if isOwner(uid) && isValidSonarFile() && isUnder100MB();
+      allow delete: if isOwner(uid) || isAdmin();
+    }
+
+    // Admin-managed assets (lake photos, species icons, etc.)
+    match /assets/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}
