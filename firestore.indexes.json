@@ -1,0 +1,187 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "lakes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "county", "order": "ASCENDING" },
+        { "fieldPath": "tier", "order": "ASCENDING" },
+        { "fieldPath": "name", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "lakes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "speciesPresent", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "tier", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "angler_reports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lakeId", "order": "ASCENDING" },
+        { "fieldPath": "isPublic", "order": "ASCENDING" },
+        { "fieldPath": "reportDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "angler_reports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lakeId", "order": "ASCENDING" },
+        { "fieldPath": "species", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "reportDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "angler_reports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "reportDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "netting_surveys",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lakeId", "order": "ASCENDING" },
+        { "fieldPath": "surveyYear", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "netting_surveys",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lakeId", "order": "ASCENDING" },
+        { "fieldPath": "species", "order": "ASCENDING" },
+        { "fieldPath": "surveyYear", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "electrofishing_surveys",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lakeId", "order": "ASCENDING" },
+        { "fieldPath": "surveyYear", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "stocking_events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lakeId", "order": "ASCENDING" },
+        { "fieldPath": "stockingDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "stocking_events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lakeId", "order": "ASCENDING" },
+        { "fieldPath": "species", "order": "ASCENDING" },
+        { "fieldPath": "stockingDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "winterkill_events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lakeId", "order": "ASCENDING" },
+        { "fieldPath": "eventYear", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "water_quality",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lakeId", "order": "ASCENDING" },
+        { "fieldPath": "sampleDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "creel_surveys",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lakeId", "order": "ASCENDING" },
+        { "fieldPath": "surveyYear", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "aeration_events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lakeId", "order": "ASCENDING" },
+        { "fieldPath": "eventDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "regulations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lakeId", "order": "ASCENDING" },
+        { "fieldPath": "effectiveYear", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "regulations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "county", "order": "ASCENDING" },
+        { "fieldPath": "species", "order": "ASCENDING" },
+        { "fieldPath": "effectiveYear", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "ice_reports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lakeId", "order": "ASCENDING" },
+        { "fieldPath": "reportDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "ice_reports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "county", "order": "ASCENDING" },
+        { "fieldPath": "reportDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "similar_lakes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "sourceLakeId", "order": "ASCENDING" },
+        { "fieldPath": "similarityScore", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "live_intelligence_cache",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lakeId", "order": "ASCENDING" },
+        { "fieldPath": "generatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "weather_cache",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lakeId", "order": "ASCENDING" },
+        { "fieldPath": "fetchedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "lake_structures",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lakeId", "order": "ASCENDING" },
+        { "fieldPath": "structureType", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
