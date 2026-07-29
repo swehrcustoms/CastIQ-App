@@ -39,7 +39,7 @@ export function LakeSearch() {
   });
 
   return (
-    <div className="flex h-screen flex-col bg-castiq-blue-dark">
+    <div className="flex h-[calc(100dvh-8rem)] flex-col bg-castiq-blue-dark">
       {/* Header */}
       <div className="border-b border-castiq-blue px-4 py-4 space-y-3">
         <div className="flex items-center gap-3">

@@ -148,7 +148,10 @@ export const DetectStructuresRequestSchema = z.object({
 });
 
 export const GuidePortalRequestSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('get_dashboard'), lakeIds: z.array(z.string()) }),
+  z.object({
+    action: z.literal('get_dashboard'),
+    lakeIds: z.array(z.string()).default([]),
+  }),
   z.object({ action: z.literal('generate_api_key') }),
   z.object({ action: z.literal('revoke_api_key') }),
   z.object({

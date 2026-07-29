@@ -51,7 +51,7 @@ export function MapHome() {
   }, [fetchNearby, geoLoading]);
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-castiq-blue-dark">
+    <div className="flex h-[calc(100dvh-8rem)] flex-col overflow-hidden bg-castiq-blue-dark">
       {/* Top bar */}
       <div className="flex items-center gap-3 px-4 py-3 pt-safe">
         <div className="flex-1">

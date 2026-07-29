@@ -15,9 +15,15 @@
     "seed:lakes": "tsx scripts/seedLakes.ts",
     "seed:species": "tsx scripts/seedSpecies.ts",
     "seed:regulations": "tsx scripts/seedRegulations.ts",
+    "seed:reports": "tsx scripts/seedReports.ts",
+    "seed:all": "npm run seed:lakes && npm run seed:species && npm run seed:regulations && npm run seed:reports",
+    "create:guide": "tsx scripts/createGuideUser.ts",
     "ingest:dnr": "tsx scripts/ingestDNR.ts",
     "functions:build": "npm run build --workspace=functions",
-    "functions:serve": "firebase emulators:start --only functions,firestore,auth,storage"
+    "functions:serve": "firebase emulators:start --only functions,firestore,auth,storage",
+    "deploy": "npm run build && firebase deploy",
+    "deploy:hosting": "npm run build && firebase deploy --only hosting",
+    "deploy:functions": "npm run functions:build && firebase deploy --only functions"
   },
   "dependencies": {
     "date-fns": "^3.6.0",

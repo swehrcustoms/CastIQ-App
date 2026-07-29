@@ -133,17 +133,25 @@ export function LakeDetail() {
           )}
 
           {activeTab === 'regulations' && (
-            <div className="rounded-lg bg-castiq-blue p-6 text-center text-castiq-muted">
-              <p className="font-medium text-castiq-white mb-2">Regulations</p>
+            <div className="rounded-lg bg-castiq-blue p-6 text-center text-castiq-muted space-y-3">
+              <p className="font-medium text-castiq-white">Regulations</p>
               <p className="text-sm">
-                Per-species daily limits, slot rules, season dates, and tribal notes coming in Phase 6.
+                Look up lake-specific and statewide limits for {lake.name}.
               </p>
-              <Link
-                to="/regulations"
-                className="mt-3 inline-block text-sm text-castiq-teal hover:underline"
-              >
-                View Statewide Regulations →
-              </Link>
+              <div className="flex flex-wrap justify-center gap-3">
+                <Link
+                  to="/regulations"
+                  className="rounded-lg bg-castiq-teal/20 px-4 py-2 text-sm font-medium text-castiq-teal hover:bg-castiq-teal/30"
+                >
+                  Open regulations
+                </Link>
+                <Link
+                  to="/submit-report"
+                  className="rounded-lg bg-castiq-blue-dark px-4 py-2 text-sm text-castiq-white hover:text-castiq-teal"
+                >
+                  Submit a report
+                </Link>
+              </div>
             </div>
           )}
 

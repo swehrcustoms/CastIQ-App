@@ -35,11 +35,39 @@ export const guidePortalService = onCall(
     const guideRef = guideDoc.docs[0].ref;
 
     if (action === 'get_dashboard') {
-      const { lakeIds } = parsed.data;
+      const guideData = guideDoc.docs[0].data() as {
+        primaryLakeIds?: string[];
+        businessName?: string;
+      };
+      const requested = parsed.data.lakeIds;
+      const lakeIds = (
+        requested.length > 0 ? requested : guideData.primaryLakeIds ?? []
+      ).slice(0, 10);
+
       const lakes = await Promise.all(
-        lakeIds.slice(0, 10).map((id) => db.collection('lakes').doc(id).get())
+        lakeIds.map((id) => db.collection('lakes').doc(id).get())
       );
-      return { lakes: lakes.map((d) => ({ id: d.id, ...d.data() })) };
+
+      const reportSnaps = await Promise.all(
+        lakeIds.slice(0, 3).map((lakeId) =>
+          db
+            .collection('angler_reports')
+            .where('lakeId', '==', lakeId)
+            .where('isPublic', '==', true)
+            .orderBy('reportDate', 'desc')
+            .limit(3)
+            .get()
+        )
+      );
+      const recentReports = reportSnaps.flatMap((snap) =>
+        snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+      );
+
+      return {
+        lakes: lakes.filter((d) => d.exists).map((d) => ({ id: d.id, ...d.data() })),
+        guide: { id: guideDoc.docs[0].id, ...guideDoc.docs[0].data() },
+        recentReports,
+      };
     }
 
     if (action === 'generate_api_key') {

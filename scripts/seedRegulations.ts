@@ -179,6 +179,124 @@ const BORDER_WATERS = [
   },
 ];
 
+const YEAR = 2026;
+
+/** Lake-specific regs for Tier-1 demo lakes (queried by regulationLookupService). */
+const LAKE_REGULATIONS = [
+  {
+    regId: 'mille-lacs-walleye-2026',
+    lakeId: '48-0259-00',
+    lakeIdDNR: '48-0259-00',
+    county: 'Mille Lacs',
+    year: YEAR,
+    effectiveYear: YEAR,
+    species: 'walleye',
+    jurisdiction: 'MN',
+    openDate: '2026-05-09',
+    closeDate: null,
+    dailyLimit: 4,
+    possessionLimit: 4,
+    conservationLicenseLimit: null,
+    minSizeIn: 18,
+    maxSizeIn: null,
+    slotLimitLowIn: null,
+    slotLimitHighIn: null,
+    gearRestrictions: null,
+    artificialOnly: false,
+    catchAndReleaseOnly: false,
+    tribalOverlap: true,
+    tribalNotes: 'Mille Lacs Band treaty harvest may affect openers.',
+    experimentalReg: true,
+    specialNotes: 'Protected slot / experimental regs may apply — verify DNR before harvest.',
+    alertLevel: 'warning' as const,
+    sourceUrl: 'https://www.dnr.state.mn.us/regulations/fishing/index.html',
+  },
+  {
+    regId: 'leech-walleye-2026',
+    lakeId: '11-0182-00',
+    lakeIdDNR: '11-0182-00',
+    county: 'Cass',
+    year: YEAR,
+    effectiveYear: YEAR,
+    species: 'walleye',
+    jurisdiction: 'MN',
+    openDate: '2026-05-09',
+    closeDate: null,
+    dailyLimit: 4,
+    possessionLimit: 8,
+    conservationLicenseLimit: null,
+    minSizeIn: 15,
+    maxSizeIn: null,
+    slotLimitLowIn: 20,
+    slotLimitHighIn: 26,
+    gearRestrictions: null,
+    artificialOnly: false,
+    catchAndReleaseOnly: false,
+    tribalOverlap: false,
+    tribalNotes: null,
+    experimentalReg: false,
+    specialNotes: 'Only 1 walleye over 26" in possession.',
+    alertLevel: 'info' as const,
+    sourceUrl: 'https://www.dnr.state.mn.us/regulations/fishing/index.html',
+  },
+  {
+    regId: 'lotw-walleye-2026',
+    lakeId: 'LOTW-MN',
+    lakeIdDNR: 'LOTW-MN',
+    county: 'Lake of the Woods',
+    year: YEAR,
+    effectiveYear: YEAR,
+    species: 'walleye',
+    jurisdiction: 'MN',
+    openDate: '2026-05-09',
+    closeDate: null,
+    dailyLimit: 6,
+    possessionLimit: 6,
+    conservationLicenseLimit: null,
+    minSizeIn: 15,
+    maxSizeIn: null,
+    slotLimitLowIn: null,
+    slotLimitHighIn: null,
+    gearRestrictions: null,
+    artificialOnly: false,
+    catchAndReleaseOnly: false,
+    tribalOverlap: false,
+    tribalNotes: null,
+    experimentalReg: false,
+    specialNotes: 'Border water — Ontario limits differ. Carry correct licenses.',
+    alertLevel: 'warning' as const,
+    sourceUrl: 'https://www.dnr.state.mn.us/regulations/fishing/index.html',
+  },
+  {
+    regId: 'vermilion-muskie-2026',
+    lakeId: '69-0375-00',
+    lakeIdDNR: '69-0375-00',
+    county: 'St. Louis',
+    year: YEAR,
+    effectiveYear: YEAR,
+    species: 'muskie',
+    jurisdiction: 'MN',
+    openDate: '2026-06-07',
+    closeDate: '2026-11-30',
+    dailyLimit: 1,
+    possessionLimit: 1,
+    conservationLicenseLimit: null,
+    minSizeIn: 54,
+    maxSizeIn: null,
+    slotLimitLowIn: null,
+    slotLimitHighIn: null,
+    gearRestrictions: null,
+    artificialOnly: false,
+    catchAndReleaseOnly: false,
+    tribalOverlap: false,
+    tribalNotes: null,
+    experimentalReg: false,
+    specialNotes: null,
+    alertLevel: null,
+    sourceUrl: 'https://www.dnr.state.mn.us/regulations/fishing/index.html',
+  },
+];
+
 async function seedRegulations(): Promise<void> {
   console.log(`Seeding ${STATEWIDE_DEFAULTS.length} statewide defaults...`);
   const batch = db.batch();
@@ -202,6 +320,15 @@ async function seedRegulations(): Promise<void> {
 
   await batch2.commit();
   console.log(`✓ ${BORDER_WATERS.length} border waters seeded`);
+
+  console.log(`Seeding ${LAKE_REGULATIONS.length} lake-specific regulations...`);
+  const batch3 = db.batch();
+  for (const reg of LAKE_REGULATIONS) {
+    const ref = db.collection('regulations').doc(reg.regId);
+    batch3.set(ref, reg, { merge: true });
+  }
+  await batch3.commit();
+  console.log(`✓ ${LAKE_REGULATIONS.length} lake regulations seeded`);
 }
 
 seedRegulations().catch((err) => {

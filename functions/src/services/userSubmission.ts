@@ -29,20 +29,35 @@ export const userSubmissionService = onCall(
       userSubmitted: true,
       verified: false,
       upvotes: 0,
-      aiSummary: '',
-      rawText: '',
+      aiSummary: data.conditions
+        ? `Angler report: ${data.conditions.slice(0, 160)}`
+        : '',
+      rawText: data.conditions ?? '',
       confidenceScore: 80,
       sourceId: null,
+      reportDate: now,
       createdAt: now,
       updatedAt: now,
     });
 
-    // Update user's submitted report list
+    // Update user's submitted report list + lake report activity
     await db
       .collection('users')
       .doc(userId)
       .set(
         { submittedReportIds: FieldValue.arrayUnion(reportRef.id) },
+        { merge: true }
+      );
+
+    await db
+      .collection('lakes')
+      .doc(data.lakeId)
+      .set(
+        {
+          lastReportDate: now,
+          reportCount7d: FieldValue.increment(1),
+          updatedAt: now,
+        },
         { merge: true }
       );
 
