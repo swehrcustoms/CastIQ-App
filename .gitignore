@@ -11,6 +11,9 @@ functions/lib/
 .env.local
 .env.*.local
 
+# Vercel
+.vercel/
+
 # Firebase
 .firebase/
 firebase-debug.log
