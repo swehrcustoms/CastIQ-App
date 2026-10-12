@@ -1,6 +1,8 @@
 import {
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
@@ -15,8 +17,46 @@ import type { CastIQUser } from '../types/user';
 
 const googleProvider = new GoogleAuthProvider();
 
-export function signInWithGoogle(): Promise<User> {
-  return signInWithPopup(auth, googleProvider).then((cred) => cred.user);
+function authCode(err: unknown): string {
+  return err && typeof err === 'object' && 'code' in err
+    ? String((err as { code: string }).code)
+    : '';
+}
+
+/**
+ * Popup first. Embedded browsers (including the IDE browser) block the popup,
+ * so those attempts continue with a full-page Google redirect.
+ */
+export async function signInWithGoogle(): Promise<User | 'redirect'> {
+  try {
+    const cred = await signInWithPopup(auth, googleProvider);
+    return cred.user;
+  } catch (err) {
+    const code = authCode(err);
+    if (
+      code === 'auth/popup-blocked' ||
+      code === 'auth/operation-not-supported-in-this-environment'
+    ) {
+      await signInWithRedirect(auth, googleProvider);
+      return 'redirect';
+    }
+    throw err;
+  }
+}
+
+let redirectResult: Promise<User | null> | null = null;
+
+/** Completes a Google redirect that returns the browser to /login. Called once per page load. */
+export function completeGoogleRedirect(): Promise<User | null> {
+  if (!redirectResult) {
+    redirectResult = getRedirectResult(auth)
+      .then((result) => result?.user ?? null)
+      .catch((err: unknown) => {
+        redirectResult = null;
+        throw err;
+      });
+  }
+  return redirectResult;
 }
 
 export function signInWithEmail(email: string, password: string): Promise<User> {
@@ -48,7 +88,7 @@ export type UserRole = CastIQUser['role'];
 export async function ensureUserProfile(
   user: User,
   options?: { role?: UserRole; displayName?: string }
-): Promise<void> {
+): Promise<{ created: boolean }> {
   const ref = doc(db, 'users', user.uid);
   const snap = await getDoc(ref);
 
@@ -72,12 +112,13 @@ export async function ensureUserProfile(
       },
       submittedReportIds: [],
       guidePortalAccess: false,
+      onboardingComplete: false,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       lastLoginAt: serverTimestamp(),
     };
     await setDoc(ref, profile);
-    return;
+    return { created: true };
   }
 
   await setDoc(
@@ -91,13 +132,14 @@ export async function ensureUserProfile(
     },
     { merge: true }
   );
+  return { created: false };
 }
 
 export function authErrorMessage(err: unknown): string {
-  const code =
-    err && typeof err === 'object' && 'code' in err
-      ? String((err as { code: string }).code)
-      : '';
+  const code = authCode(err);
+  if (import.meta.env.DEV && code) {
+    console.info('[CastIQ] Auth error', code);
+  }
 
   switch (code) {
     case 'auth/email-already-in-use':
@@ -111,10 +153,15 @@ export function authErrorMessage(err: unknown): string {
     case 'auth/invalid-credential':
       return 'Invalid email or password.';
     case 'auth/popup-closed-by-user':
-      return 'Sign-in popup was closed before completing.';
+    case 'auth/cancelled-popup-request':
+      return 'Google sign-in was closed before it finished.';
+    case 'auth/popup-blocked':
+      return 'This browser blocked the Google window. Try again, or use email instead.';
+    case 'auth/unauthorized-domain':
+      return 'This address is not allowed for Google sign-in yet.';
     case 'auth/network-request-failed':
       return 'Network error. Check your connection and try again.';
     default:
-      return err instanceof Error ? err.message : 'Authentication failed. Please try again.';
+      return 'Sign-in failed. Please try again.';
   }
 }

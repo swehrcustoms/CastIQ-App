@@ -23,6 +23,7 @@ export interface Lake {
   maxDepthFt: number;
   avgDepthFt: number;
   county: string;
+  nearestTown?: string;
   dnrLakeNumber: string;
   jurisdiction: string;
   waterType: 'lake' | 'river' | 'reservoir';

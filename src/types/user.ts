@@ -15,6 +15,8 @@ export interface CastIQUser {
   };
   submittedReportIds: string[];
   guidePortalAccess: boolean;
+  /** False only for accounts created after onboarding shipped. Missing means an existing account. */
+  onboardingComplete?: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;
   lastLoginAt: Timestamp;

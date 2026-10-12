@@ -25,4 +25,103 @@
     min-height: 100vh;
     font-family: 'Inter var', system-ui, sans-serif;
   }
+
+  :focus-visible {
+    outline: 2px solid var(--castiq-teal);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .ciq-card {
+    border-radius: 0.75rem;
+    border: 1px solid rgb(255 255 255 / 0.08);
+    background: #1a3a5c;
+  }
+
+  .ciq-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    transition: background-color 150ms ease, color 150ms ease;
+  }
+
+  .ciq-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .ciq-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 0.5rem;
+    background: #06b6d4;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.25rem;
+    color: #0c1f3d;
+  }
+
+  .ciq-btn-primary:hover {
+    background: #22d3ee;
+  }
+
+  .ciq-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 0.5rem;
+    background: #0c1f3d;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    color: #f8fafc;
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+  }
+
+  .ciq-btn-secondary:hover {
+    color: #06b6d4;
+  }
+
+  .ciq-input {
+    width: 100%;
+    border-radius: 0.5rem;
+    background: #0c1f3d;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.875rem;
+    color: #f8fafc;
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+  }
+
+  .ciq-input::placeholder {
+    color: #94a3b8;
+  }
+
+  .ciq-input:focus {
+    outline: none;
+    box-shadow: inset 0 0 0 1px #06b6d4;
+  }
+
+  .scrollbar-hide {
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
 }

@@ -1,59 +1,93 @@
-import { Link } from 'react-router-dom';
+import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { signOutUser } from '../../services/auth';
+
+const LINKS = [
+  { to: '/', label: 'Map', end: true },
+  { to: '/search', label: 'Search', end: false },
+  { to: '/ice', label: 'Ice', end: false },
+  { to: '/social', label: 'Social', end: false },
+  { to: '/regulations', label: 'Regulations', end: false },
+  { to: '/border-waters', label: 'Border', end: false },
+];
 
 export function AppHeader() {
   const { user, profile } = useAuth();
+  const location = useLocation();
+  const focused = location.pathname === '/onboarding';
 
   if (!user) return null;
 
-  const label = profile?.displayName || user.email || 'Angler';
+  const label = profile?.displayName || user.displayName || user.email || 'Angler';
   const initial = label.charAt(0).toUpperCase();
 
   return (
-    <header className="flex items-center justify-between gap-3 border-b border-castiq-blue bg-castiq-blue-dark/95 px-4 py-2">
-      <Link to="/" className="text-sm font-bold tracking-wide text-castiq-teal">
-        CastIQ
-      </Link>
-
-      <div className="flex items-center gap-3">
-        <Link
-          to="/submit-report"
-          className="hidden rounded-lg bg-castiq-teal/15 px-3 py-1.5 text-xs font-medium text-castiq-teal sm:inline-block hover:bg-castiq-teal/25"
-        >
-          + Report
+    <header className="sticky top-0 z-40 border-b border-white/10 bg-castiq-blue-dark/95 backdrop-blur">
+      <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-2.5">
+        <Link to="/" className="text-sm font-bold tracking-wide text-castiq-teal">
+          CastIQ
         </Link>
 
-        <div className="flex items-center gap-2">
-          {user.photoURL ? (
-            <img
-              src={user.photoURL}
-              alt=""
-              className="h-7 w-7 rounded-full object-cover ring-1 ring-castiq-teal/40"
-            />
-          ) : (
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-castiq-blue text-xs font-bold text-castiq-teal">
-              {initial}
-            </span>
-          )}
-          <div className="hidden min-w-0 sm:block">
-            <p className="truncate text-xs font-medium text-castiq-white max-w-[10rem]">
-              {label}
-            </p>
-            {profile?.role && (
-              <p className="text-[10px] capitalize text-castiq-muted">{profile.role}</p>
-            )}
-          </div>
-        </div>
+        {!focused && (
+          <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
+            {LINKS.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) =>
+                  `rounded-lg px-2.5 py-1.5 text-xs font-medium ${
+                    item.to === '/border-waters' ? 'hidden xl:inline' : ''
+                  } ${isActive ? 'bg-castiq-teal/15 text-castiq-teal' : 'text-castiq-muted hover:text-castiq-white'}`
+                }
+              >
+                {item.label}
+              </NavLink>
+            ))}
+            <details className="relative">
+              <summary className="cursor-pointer list-none rounded-lg px-2.5 py-1.5 text-xs font-medium text-castiq-muted hover:text-castiq-white">
+                More
+              </summary>
+              <div className="absolute right-0 z-50 mt-2 w-48 rounded-xl border border-white/10 bg-castiq-blue p-1 shadow-lg">
+                <HeaderLink to="/border-waters" label="Border waters" className="xl:hidden" />
+                <HeaderLink to="/submit-report" label="Share a report" />
+                <HeaderLink to="/guides" label="Guides" />
+                <HeaderLink to="/pricing" label="Pricing" />
+                {(profile?.guidePortalAccess || profile?.role === 'guide' || profile?.role === 'admin') && (
+                  <HeaderLink to="/guide" label="Guide portal" />
+                )}
+              </div>
+            </details>
+          </nav>
+        )}
 
-        <button
-          type="button"
-          onClick={() => void signOutUser()}
-          className="rounded-lg bg-castiq-blue px-3 py-1.5 text-xs text-castiq-muted hover:text-castiq-white"
-        >
-          Sign out
-        </button>
+        <div className="ml-auto flex items-center gap-3">
+          {!focused && (
+            <Link to="/submit-report" className="hidden text-xs font-medium text-castiq-teal sm:inline hover:underline">
+              Share a report
+            </Link>
+          )}
+          <Link to="/profile" className="flex items-center gap-2 rounded-full" aria-label="Open profile">
+            {user.photoURL ? (
+              <img src={user.photoURL} alt="" className="h-8 w-8 rounded-full object-cover ring-1 ring-castiq-teal/40" />
+            ) : (
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-castiq-blue text-xs font-bold text-castiq-teal">
+                {initial}
+              </span>
+            )}
+            <span className="hidden max-w-[8rem] truncate text-xs font-medium text-castiq-white lg:inline">
+              {label}
+            </span>
+          </Link>
+        </div>
       </div>
     </header>
+  );
+}
+
+function HeaderLink({ to, label, className = '' }: { to: string; label: string; className?: string }) {
+  return (
+    <Link to={to} className={`block rounded-lg px-3 py-2 text-sm text-castiq-white hover:bg-castiq-blue-dark ${className}`}>
+      {label}
+    </Link>
   );
 }

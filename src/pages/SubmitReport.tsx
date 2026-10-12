@@ -8,6 +8,7 @@ import { functions, storage } from '../services/firebase';
 import { Collections } from '../services/firestore';
 import { useAuth } from '../hooks/useAuth';
 import { useLakeSearch } from '../hooks/useLakeSearch';
+import { lakePlaceLabel } from '../services/dnrLakeSearch';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { SPECIES_OPTIONS } from '../components/shared/SpeciesChips';
 import type { Lake } from '../types/lake';
@@ -222,7 +223,7 @@ export function SubmitReport() {
                 }`}
               >
                 {lake.name}
-                <span className="ml-2 text-xs text-castiq-muted">{lake.county}</span>
+                <span className="ml-2 text-xs text-castiq-muted">{lakePlaceLabel(lake)}</span>
               </button>
             ))}
           </div>

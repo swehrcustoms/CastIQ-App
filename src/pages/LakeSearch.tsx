@@ -16,7 +16,7 @@ export function LakeSearch() {
   const [sortKey] = useState<SortKey>('recent');
   const [showFilters, setShowFilters] = useState(false);
 
-  const { results, loading } = useLakeSearch(query, filters);
+  const { results, loading, approximate } = useLakeSearch(query, filters);
 
   // Sync URL query param
   useEffect(() => {
@@ -27,16 +27,18 @@ export function LakeSearch() {
     }
   }, [query, setParams]);
 
-  const sorted = [...results].sort((a, b) => {
-    if (sortKey === 'reports') return (b.reportCount7d ?? 0) - (a.reportCount7d ?? 0);
-    const aDate = a.lastReportDate
-      ? (a.lastReportDate as unknown as { toDate?: () => Date }).toDate?.()?.getTime() ?? 0
-      : 0;
-    const bDate = b.lastReportDate
-      ? (b.lastReportDate as unknown as { toDate?: () => Date }).toDate?.()?.getTime() ?? 0
-      : 0;
-    return bDate - aDate;
-  });
+  const sorted = query
+    ? results
+    : [...results].sort((a, b) => {
+        if (sortKey === 'reports') return (b.reportCount7d ?? 0) - (a.reportCount7d ?? 0);
+        const aDate = a.lastReportDate
+          ? (a.lastReportDate as unknown as { toDate?: () => Date }).toDate?.()?.getTime() ?? 0
+          : 0;
+        const bDate = b.lastReportDate
+          ? (b.lastReportDate as unknown as { toDate?: () => Date }).toDate?.()?.getTime() ?? 0
+          : 0;
+        return bDate - aDate;
+      });
 
   return (
     <div className="flex h-[calc(100dvh-8rem)] flex-col bg-castiq-blue-dark">
@@ -60,12 +62,21 @@ export function LakeSearch() {
           <SearchFilters filters={filters} onChange={setFilters} />
         )}
 
-        {/* Result count */}
-        {query && (
-          <p className="text-xs text-castiq-muted">
-            {loading ? 'Searching…' : `${results.length} lake${results.length !== 1 ? 's' : ''} found`}
-          </p>
-        )}
+        <p className="text-xs text-castiq-muted">
+          {loading
+            ? query
+              ? 'Searching…'
+              : 'Loading lakes…'
+            : query
+              ? results.length === 0
+                ? 'No matching lakes'
+                : approximate
+                  ? `${results.length} closest name${results.length !== 1 ? 's' : ''}`
+                  : `${results.length} lake${results.length !== 1 ? 's' : ''} found`
+              : results.length > 0
+                ? 'Top Minnesota lakes'
+                : 'No lakes loaded yet'}
+        </p>
       </div>
 
       {/* Results */}
@@ -81,18 +92,17 @@ export function LakeSearch() {
             <span className="text-4xl">🔍</span>
             <p className="font-medium text-castiq-white">No lakes found</p>
             <p className="text-sm text-castiq-muted">
-              Try a different name or seed the database with{' '}
-              <code className="text-castiq-teal">npm run seed:lakes</code>
+              Try a shorter spelling. Matches show the nearby town and county so you can pick the right water.
             </p>
           </div>
         )}
 
-        {!loading && !query && (
+        {!loading && !query && results.length === 0 && (
           <div className="flex flex-col items-center gap-3 py-12 text-center">
             <span className="text-4xl">🌊</span>
-            <p className="font-medium text-castiq-white">Search Minnesota Lakes</p>
+            <p className="font-medium text-castiq-white">No lakes to show yet</p>
             <p className="text-sm text-castiq-muted">
-              Type a lake name to search 4,500+ Minnesota lakes
+              The lake list has not been loaded into CastIQ. Search will work once those waters are available.
             </p>
           </div>
         )}

@@ -8,6 +8,10 @@ const TABS = [
 
 export type LakeTab = (typeof TABS)[number]['id'];
 
+export function isLakeTab(value: string | null): value is LakeTab {
+  return TABS.some((tab) => tab.id === value);
+}
+
 interface Props {
   active: LakeTab;
   onSelect: (tab: LakeTab) => void;

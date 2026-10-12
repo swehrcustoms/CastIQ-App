@@ -1,19 +1,8 @@
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { logger } from 'firebase-functions';
+import Parser from 'rss-parser';
 import { db } from '../utils/adminInit';
 import { FieldValue } from 'firebase-admin/firestore';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const Parser = require('rss-parser') as new () => {
-  parseURL: (url: string) => Promise<{ items: RssItem[] }>;
-};
-
-interface RssItem {
-  title?: string;
-  content?: string;
-  contentSnippet?: string;
-  pubDate?: string;
-  link?: string;
-}
 
 const RSS_SOURCES = [
   {
@@ -46,7 +35,7 @@ const RSS_SOURCES = [
   },
 ];
 
-async function ingestSource(parser: InstanceType<typeof Parser>, source: (typeof RSS_SOURCES)[number]): Promise<number> {
+async function ingestSource(parser: Parser, source: (typeof RSS_SOURCES)[number]): Promise<number> {
   const feed = await parser.parseURL(source.url);
   const batch = db.batch();
   let count = 0;

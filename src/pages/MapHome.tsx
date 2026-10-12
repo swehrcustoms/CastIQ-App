@@ -1,20 +1,26 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { httpsCallable } from 'firebase/functions';
-import { functions } from '../services/firebase';
+import { getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { MapView } from '../components/map/MapView';
-import { SpeciesChips } from '../components/shared/SpeciesChips';
+import { SpeciesChips, SPECIES_OPTIONS } from '../components/shared/SpeciesChips';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { SearchBar } from '../components/search/SearchBar';
+import { Collections } from '../services/firestore';
 import { formatReportAge, getPinColor } from '../utils/reportRecencyColor';
+import { canonicalSpecies, speciesMatches } from '../utils/species';
 import { useGeolocation, MN_CENTER } from '../hooks/useGeolocation';
 import type { Lake } from '../types/lake';
 import type { WithId } from '../types/common';
 
-const geoSearchFn = httpsCallable<
-  { lat: number; lng: number; radiusMiles: number; species?: string; limit: number },
-  { lakes: (Lake & { id: string })[] }
->(functions, 'geoSearchService');
+function lakeMatchesSpecies(lake: WithId<Lake>, selected: string): boolean {
+  if (selected === 'all') return true;
+  return (lake.speciesPresent ?? []).some((species) => {
+    if (speciesMatches(species, selected)) return true;
+    const wanted = canonicalSpecies(selected);
+    const present = canonicalSpecies(species);
+    return wanted.endsWith('bass') && present.endsWith('bass');
+  });
+}
 
 export function MapHome() {
   const navigate = useNavigate();
@@ -29,22 +35,20 @@ export function MapHome() {
 
   const fetchNearby = useCallback(async () => {
     setLakesLoading(true);
+    setSelectedLake(null);
     try {
-      const result = await geoSearchFn({
-        lat: center.lat,
-        lng: center.lng,
-        radiusMiles: 50,
-        species: selectedSpecies !== 'all' ? selectedSpecies : undefined,
-        limit: 20,
-      });
-      setNearbyLakes(result.data.lakes as WithId<Lake>[]);
+      const snap = await getDocs(query(Collections.lakes, orderBy('acreage', 'desc'), limit(40)));
+      const lakes = snap.docs
+        .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() } as WithId<Lake>))
+        .filter((lake) => lakeMatchesSpecies(lake, selectedSpecies))
+        .sort((a, b) => (b.reportCount7d ?? 0) - (a.reportCount7d ?? 0) || (b.acreage ?? 0) - (a.acreage ?? 0));
+      setNearbyLakes(lakes);
     } catch {
-      // Functions not deployed yet — show empty state gracefully
       setNearbyLakes([]);
     } finally {
       setLakesLoading(false);
     }
-  }, [center.lat, center.lng, selectedSpecies]);
+  }, [selectedSpecies]);
 
   useEffect(() => {
     if (!geoLoading) fetchNearby();
@@ -123,7 +127,11 @@ export function MapHome() {
       <div className="border-t border-castiq-blue bg-castiq-blue-dark">
         <div className="px-4 py-2">
           <p className="text-xs font-medium text-castiq-muted">
-            {lakesLoading ? 'Finding nearby lakes…' : `${nearbyLakes.length} lakes nearby`}
+            {lakesLoading
+              ? 'Finding lakes…'
+              : selectedSpecies === 'all'
+                ? `${nearbyLakes.length} top Minnesota lakes`
+                : `${nearbyLakes.length} recommended for ${SPECIES_OPTIONS.find((option) => option.id === selectedSpecies)?.label ?? 'this species'}`}
           </p>
         </div>
         <div className="flex gap-3 overflow-x-auto px-4 pb-4 scrollbar-hide">
@@ -178,7 +186,9 @@ export function MapHome() {
 
           {nearbyLakes.length === 0 && !lakesLoading && (
             <p className="py-4 text-sm text-castiq-muted">
-              No nearby lakes found. Deploy Firebase Functions and seed the database to get started.
+              {selectedSpecies === 'all'
+                ? 'No lakes are loaded yet.'
+                : 'No lakes on file list this species yet.'}
             </p>
           )}
         </div>

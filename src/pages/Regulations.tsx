@@ -1,76 +1,116 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getDocs, orderBy, query } from 'firebase/firestore';
-import { Collections } from '../services/firestore';
 import { useLakeSearch } from '../hooks/useLakeSearch';
-import { useRegulations } from '../hooks/useRegulations';
+import { fetchDnrSpecialRegulations, lakePlaceLabel } from '../services/dnrLakeSearch';
+import type { LakeSpecialRegulation } from '../services/dnrLakeSearch';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
-import { SpeciesChips } from '../components/shared/SpeciesChips';
-import type { StatewideDefault } from '../types/regulations';
+import {
+  STATEWIDE_GROUPS,
+  STATEWIDE_REGULATIONS,
+  STATEWIDE_SOURCE,
+  STATEWIDE_YEAR,
+} from '../data/statewideRegulations';
+import type { StatewideRule } from '../data/statewideRegulations';
 import type { Lake } from '../types/lake';
 import type { WithId } from '../types/common';
+
+function RuleCard({ rule }: { rule: StatewideRule }) {
+  return (
+    <article className="rounded-xl bg-castiq-blue px-4 py-3">
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="font-semibold text-castiq-white">{rule.species}</h3>
+        {rule.zone && <span className="shrink-0 text-right text-xs text-castiq-teal">{rule.zone}</span>}
+      </div>
+      <dl className="mt-2 space-y-1 text-sm">
+        <div className="flex gap-2">
+          <dt className="w-16 shrink-0 text-castiq-muted">Season</dt>
+          <dd className="text-castiq-white">{rule.season}</dd>
+        </div>
+        <div className="flex gap-2">
+          <dt className="w-16 shrink-0 text-castiq-muted">Limit</dt>
+          <dd className="text-castiq-white">{rule.limit}</dd>
+        </div>
+        <div className="flex gap-2">
+          <dt className="w-16 shrink-0 text-castiq-muted">Size</dt>
+          <dd className="text-castiq-white">{rule.size}</dd>
+        </div>
+      </dl>
+      {rule.note && <p className="mt-2 text-xs text-castiq-muted">{rule.note}</p>}
+    </article>
+  );
+}
 
 export function Regulations() {
   const [lakeQuery, setLakeQuery] = useState('');
   const [selectedLake, setSelectedLake] = useState<WithId<Lake> | null>(null);
-  const [species, setSpecies] = useState('all');
-  const [statewide, setStatewide] = useState<WithId<StatewideDefault>[]>([]);
-  const [statewideLoading, setStatewideLoading] = useState(true);
+  const [specials, setSpecials] = useState<LakeSpecialRegulation[]>([]);
+  const [specialsLoading, setSpecialsLoading] = useState(false);
+  const [specialsError, setSpecialsError] = useState<string | null>(null);
 
   const { results, loading: searchLoading } = useLakeSearch(lakeQuery, {}, 10);
-  const {
-    regulations,
-    alerts,
-    loading: regsLoading,
-    error,
-  } = useRegulations(
-    selectedLake?.id ?? null,
-    species === 'all' ? undefined : species
-  );
+  const showingLakeRules = Boolean(selectedLake && (specialsLoading || specials.length > 0) && !specialsError);
 
   useEffect(() => {
-    setStatewideLoading(true);
-    getDocs(query(Collections.statewideDefaults, orderBy('species')))
-      .then((snap) => {
-        setStatewide(
-          snap.docs.map(
-            (d) => ({ id: d.id, ...d.data() } as WithId<StatewideDefault>)
-          )
-        );
+    if (!selectedLake) {
+      setSpecials([]);
+      setSpecialsError(null);
+      setSpecialsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setSpecialsLoading(true);
+    setSpecialsError(null);
+    fetchDnrSpecialRegulations(selectedLake)
+      .then((rules) => {
+        if (!cancelled) setSpecials(rules);
       })
-      .catch(() => setStatewide([]))
-      .finally(() => setStatewideLoading(false));
-  }, []);
+      .catch(() => {
+        if (!cancelled) setSpecialsError('Lake regulations could not be loaded. Try that lake again.');
+      })
+      .finally(() => {
+        if (!cancelled) setSpecialsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedLake]);
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 px-4 py-6 pb-28">
       <div>
         <h1 className="text-xl font-bold text-castiq-white">Regulations</h1>
         <p className="mt-1 text-sm text-castiq-muted">
-          Minnesota statewide defaults and lake-specific rules. Always verify with
-          official DNR sources before fishing.
+          Minnesota inland regulations for {STATEWIDE_YEAR}. These state rules stay on this page until you
+          select a lake. Confirm them with the{' '}
+          <a href={STATEWIDE_SOURCE} target="_blank" rel="noreferrer" className="text-castiq-teal hover:underline">
+            DNR fishing regulations
+          </a>{' '}
+          before you keep fish. Border waters and Lake Superior use their own rules.
         </p>
       </div>
 
-      {/* Lake-specific lookup */}
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-castiq-muted">
-          Lake-specific lookup
+          Lake regulations
         </h2>
         <input
           type="search"
           value={lakeQuery}
           onChange={(e) => setLakeQuery(e.target.value)}
-          placeholder="Search a lake…"
+          placeholder="Search a lake for its special regulations…"
           className="w-full rounded-lg bg-castiq-blue px-4 py-3 text-sm text-castiq-white outline-none ring-1 ring-castiq-blue focus:ring-castiq-teal"
         />
 
         {lakeQuery && (
-          <div className="max-h-40 overflow-y-auto rounded-lg border border-castiq-blue">
+          <div className="max-h-48 overflow-y-auto rounded-lg border border-castiq-blue">
             {searchLoading ? (
               <div className="flex justify-center py-3">
                 <LoadingSpinner size="sm" />
               </div>
+            ) : results.length === 0 ? (
+              <p className="px-4 py-3 text-sm text-castiq-muted">No lakes match that name.</p>
             ) : (
               results.map((lake) => (
                 <button
@@ -83,7 +123,7 @@ export function Regulations() {
                   className="block w-full px-4 py-2.5 text-left text-sm text-castiq-white hover:bg-castiq-blue"
                 >
                   {lake.name}
-                  <span className="ml-2 text-xs text-castiq-muted">{lake.county}</span>
+                  <span className="ml-2 text-xs text-castiq-muted">{lakePlaceLabel(lake)}</span>
                 </button>
               ))
             )}
@@ -95,10 +135,8 @@ export function Regulations() {
             <div className="flex items-center justify-between gap-2">
               <div>
                 <p className="font-semibold text-castiq-white">{selectedLake.name}</p>
-                <Link
-                  to={`/lake/${selectedLake.id}`}
-                  className="text-xs text-castiq-teal hover:underline"
-                >
+                <p className="text-xs text-castiq-muted">{lakePlaceLabel(selectedLake)}</p>
+                <Link to={`/lake/${selectedLake.id}`} className="text-xs text-castiq-teal hover:underline">
                   Open lake detail →
                 </Link>
               </div>
@@ -107,120 +145,63 @@ export function Regulations() {
                 onClick={() => setSelectedLake(null)}
                 className="text-xs text-castiq-muted hover:text-castiq-white"
               >
-                Clear
+                Back to statewide
               </button>
             </div>
 
-            <SpeciesChips selected={species} onChange={setSpecies} />
-
-            {regsLoading && (
+            {specialsLoading && (
               <div className="flex justify-center py-6">
                 <LoadingSpinner />
               </div>
             )}
 
-            {error && (
-              <p className="text-sm text-red-300">
-                {error.message}. Sign in and ensure Functions are deployed.
-              </p>
-            )}
+            {specialsError && <p className="text-sm text-red-300">{specialsError}</p>}
 
-            {!regsLoading && !error && regulations.length === 0 && (
+            {!specialsLoading && !specialsError && specials.length === 0 && (
               <p className="text-sm text-castiq-muted">
-                No lake-specific regulations seeded for this water. Showing statewide
-                defaults below. Run{' '}
-                <code className="text-castiq-teal">npm run seed:regulations</code> after
-                updating the seed script with lake regs.
+                No special regulations are listed for this water. The statewide rules below apply.
               </p>
             )}
 
-            {alerts.length > 0 && (
-              <div className="space-y-2">
-                {alerts.map((a) => (
-                  <div
-                    key={a.alertId}
-                    className="rounded-lg border border-castiq-yellow/40 bg-castiq-yellow/10 px-3 py-2 text-sm"
+            {specials.length > 0 && (
+              <ul className="space-y-2">
+                {specials.map((rule) => (
+                  <li
+                    key={`${rule.species}-${rule.location}-${rule.text}`}
+                    className="rounded-lg bg-castiq-blue-dark/60 px-3 py-3 text-sm"
                   >
-                    <p className="font-medium text-castiq-yellow">{a.title}</p>
-                    <p className="text-castiq-muted">{a.body}</p>
-                  </div>
+                    <p className="font-medium text-castiq-white">{rule.species}</p>
+                    <p className="mt-1 text-castiq-muted">{rule.text}</p>
+                    {rule.location && <p className="mt-1 text-xs text-castiq-teal">{rule.location}</p>}
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
+          </div>
+        )}
+      </section>
 
-            <ul className="space-y-2">
-              {regulations.map((r) => (
-                <li
-                  key={r.regId}
-                  className="rounded-lg bg-castiq-blue-dark/60 px-3 py-3 text-sm"
-                >
-                  <p className="font-medium capitalize text-castiq-white">
-                    {r.species.replace(/_/g, ' ')}
-                  </p>
-                  <p className="mt-1 text-xs text-castiq-muted">
-                    Daily limit: {r.dailyLimit ?? '—'} · Min size:{' '}
-                    {r.minSizeIn != null ? `${r.minSizeIn}"` : '—'} · Open:{' '}
-                    {r.openDate}
-                    {r.closeDate ? ` – ${r.closeDate}` : ''}
-                  </p>
-                  {r.specialNotes && (
-                    <p className="mt-1 text-xs text-castiq-teal">{r.specialNotes}</p>
-                  )}
-                </li>
+      {!showingLakeRules && (
+        <section className="space-y-6">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-castiq-muted">
+              Statewide inland rules ({STATEWIDE_YEAR})
+            </h2>
+            <p className="mt-1 text-xs text-castiq-muted">
+              Daily and possession limits are the same unless a species says otherwise. A lake can replace
+              these with a special regulation.
+            </p>
+          </div>
+          {STATEWIDE_GROUPS.map((group) => (
+            <div key={group} className="space-y-2">
+              <h3 className="text-sm font-semibold text-castiq-white">{group}</h3>
+              {STATEWIDE_REGULATIONS.filter((rule) => rule.group === group).map((rule) => (
+                <RuleCard key={rule.id} rule={rule} />
               ))}
-            </ul>
-          </div>
-        )}
-      </section>
-
-      {/* Statewide defaults */}
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-castiq-muted">
-          Statewide defaults ({new Date().getFullYear()})
-        </h2>
-        {statewideLoading ? (
-          <div className="flex justify-center py-8">
-            <LoadingSpinner size="lg" />
-          </div>
-        ) : statewide.length === 0 ? (
-          <p className="text-sm text-castiq-muted">
-            No statewide defaults found. Run{' '}
-            <code className="text-castiq-teal">npm run seed:regulations</code>.
-          </p>
-        ) : (
-          <div className="overflow-x-auto rounded-xl border border-castiq-blue">
-            <table className="min-w-full text-left text-sm">
-              <thead className="bg-castiq-blue text-xs uppercase text-castiq-muted">
-                <tr>
-                  <th className="px-3 py-2">Species</th>
-                  <th className="px-3 py-2">Daily</th>
-                  <th className="px-3 py-2">Min</th>
-                  <th className="px-3 py-2">Season</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-castiq-blue">
-                {statewide.map((r) => (
-                  <tr key={r.id} className="bg-castiq-blue-dark/40">
-                    <td className="px-3 py-2 capitalize text-castiq-white">
-                      {r.species.replace(/_/g, ' ')}
-                    </td>
-                    <td className="px-3 py-2 text-castiq-muted">
-                      {r.dailyLimit ?? '—'}
-                    </td>
-                    <td className="px-3 py-2 text-castiq-muted">
-                      {r.minSizeIn != null ? `${r.minSizeIn}"` : '—'}
-                    </td>
-                    <td className="px-3 py-2 text-castiq-muted">
-                      {r.openDate}
-                      {r.closeDate ? ` – ${r.closeDate}` : '+'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+            </div>
+          ))}
+        </section>
+      )}
     </div>
   );
 }

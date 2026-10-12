@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import type { Lake } from '../../types/lake';
 import type { WithId } from '../../types/common';
+import { lakePlaceLabel } from '../../services/dnrLakeSearch';
 import { mapboxStaticUrl } from '../../utils/geoUtils';
 import { formatReportAge, getPinColor } from '../../utils/reportRecencyColor';
 
@@ -56,7 +57,8 @@ export function SearchResultCard({ lake }: Props) {
         </div>
 
         <p className="text-xs text-castiq-muted">
-          {lake.county} County · {lake.acreage?.toLocaleString()} ac
+          {lakePlaceLabel(lake)}
+          {lake.acreage ? ` · ${Math.round(lake.acreage).toLocaleString()} ac` : ''}
           {lake.maxDepthFt ? ` · ${lake.maxDepthFt} ft` : ''}
         </p>
 

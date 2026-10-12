@@ -30,6 +30,14 @@
       "collectionGroup": "angler_reports",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "isPublic", "order": "ASCENDING" },
+        { "fieldPath": "reportDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "angler_reports",
+      "queryScope": "COLLECTION",
+      "fields": [
         { "fieldPath": "lakeId", "order": "ASCENDING" },
         { "fieldPath": "species", "arrayConfig": "CONTAINS" },
         { "fieldPath": "reportDate", "order": "DESCENDING" }

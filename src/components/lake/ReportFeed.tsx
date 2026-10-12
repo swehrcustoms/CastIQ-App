@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { httpsCallable } from 'firebase/functions';
-import { functions } from '../../services/firebase';
+import { getDocs, limit, orderBy, query, where } from 'firebase/firestore';
+import { Collections } from '../../services/firestore';
 import { SourceAttribution } from '../shared/SourceAttribution';
 import { LoadingSpinner } from '../shared/LoadingSpinner';
 import { formatReportAge } from '../../utils/reportRecencyColor';
+import { speciesMatches } from '../../utils/species';
 import type { AnglerReport } from '../../types/user';
 
 interface Props {
@@ -11,10 +12,7 @@ interface Props {
   filterSpecies?: string;
 }
 
-const reportAggregationFn = httpsCallable<
-  { lakeId: string; limit: number; species?: string },
-  { reports: AnglerReport[]; hasMore: boolean }
->(functions, 'reportAggregationService');
+const PAGE = 10;
 
 function ReportCard({ report }: { report: AnglerReport }) {
   const reportDate = report.reportDate
@@ -26,7 +24,7 @@ function ReportCard({ report }: { report: AnglerReport }) {
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-wrap gap-1.5">
-          {report.species.map((s) => (
+          {(report.species ?? []).map((s) => (
             <span
               key={s}
               className="rounded-full bg-castiq-teal/20 px-2 py-0.5 text-xs font-medium text-castiq-teal capitalize"
@@ -45,10 +43,10 @@ function ReportCard({ report }: { report: AnglerReport }) {
 
       {/* Details grid */}
       <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-castiq-muted sm:grid-cols-3">
-        {report.lures.length > 0 && (
+        {(report.lures ?? []).length > 0 && (
           <span>🎣 {report.lures.join(', ')}</span>
         )}
-        {report.colors.length > 0 && (
+        {(report.colors ?? []).length > 0 && (
           <span>🎨 {report.colors.join(', ')}</span>
         )}
         {report.depthFt && <span>📏 {report.depthFt} ft</span>}
@@ -73,43 +71,51 @@ function ReportCard({ report }: { report: AnglerReport }) {
 
 export function ReportFeed({ lakeId, filterSpecies }: Props) {
   const [reports, setReports] = useState<AnglerReport[]>([]);
-  const [hasMore, setHasMore] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
+    setError(null);
     setReports([]);
-    reportAggregationFn({
-      lakeId,
-      limit: 10,
-      species: filterSpecies === 'all' ? undefined : filterSpecies,
-    })
-      .then((r) => {
-        setReports(r.data.reports);
-        setHasMore(r.data.hasMore);
+    setVisibleCount(PAGE);
+
+    getDocs(query(
+      Collections.anglerReports,
+      where('lakeId', '==', lakeId),
+      where('isPublic', '==', true),
+      orderBy('reportDate', 'desc'),
+      limit(40),
+    ))
+      .then((snap) => {
+        if (cancelled) return;
+        const loaded = snap.docs.map((docSnap) => {
+          const data = docSnap.data();
+          return { ...data, reportId: data.reportId || docSnap.id };
+        });
+        const filtered = !filterSpecies || filterSpecies === 'all'
+          ? loaded
+          : loaded.filter((report) =>
+              (report.species ?? []).some((species) => speciesMatches(species, filterSpecies))
+            );
+        setReports(filtered);
       })
-      .catch((e) => setError(e instanceof Error ? e : new Error('Failed to load reports')))
-      .finally(() => setLoading(false));
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e : new Error('Failed to load reports'));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [lakeId, filterSpecies]);
 
-  const loadMore = async () => {
-    setLoadingMore(true);
-    try {
-      const r = await reportAggregationFn({
-        lakeId,
-        limit: 10,
-        species: filterSpecies === 'all' ? undefined : filterSpecies,
-      });
-      setReports((prev) => [...prev, ...r.data.reports]);
-      setHasMore(r.data.hasMore);
-    } catch {
-      // silently fail on load-more
-    } finally {
-      setLoadingMore(false);
-    }
-  };
+  const visible = reports.slice(0, visibleCount);
+  const hasMore = visibleCount < reports.length;
 
   if (loading) {
     return (
@@ -137,16 +143,16 @@ export function ReportFeed({ lakeId, filterSpecies }: Props) {
 
   return (
     <div className="space-y-3">
-      {reports.map((r, i) => (
+      {visible.map((r, i) => (
         <ReportCard key={r.reportId ?? i} report={r} />
       ))}
       {hasMore && (
         <button
-          onClick={loadMore}
-          disabled={loadingMore}
-          className="w-full rounded-lg bg-castiq-blue py-3 text-sm font-medium text-castiq-teal hover:bg-castiq-blue/80 disabled:opacity-50"
+          type="button"
+          onClick={() => setVisibleCount((count) => count + PAGE)}
+          className="w-full rounded-lg bg-castiq-blue py-3 text-sm font-medium text-castiq-teal hover:bg-castiq-blue/80"
         >
-          {loadingMore ? 'Loading…' : 'Load more reports'}
+          Load more reports
         </button>
       )}
     </div>

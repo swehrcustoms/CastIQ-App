@@ -39,13 +39,34 @@ export function MapView({ center, zoom = 7, lakes = [], onLakeClick }: Props) {
       mapRef.current?.remove();
       mapRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Update center when it changes
+  // Keep the camera on the recommended lakes. Fall back to the user's area when none match.
   useEffect(() => {
-    mapRef.current?.flyTo({ center, speed: 1.2 });
-  }, [center]);
+    const map = mapRef.current;
+    if (!map) return;
+
+    const fit = () => {
+      if (lakes.length === 0) {
+        map.flyTo({ center, speed: 1.2 });
+        return;
+      }
+      const bounds = new mapboxgl.LngLatBounds();
+      for (const lake of lakes) {
+        if (Number.isFinite(lake.lng) && Number.isFinite(lake.lat)) {
+          bounds.extend([lake.lng, lake.lat]);
+        }
+      }
+      if (bounds.isEmpty()) {
+        map.flyTo({ center, speed: 1.2 });
+        return;
+      }
+      map.fitBounds(bounds, { padding: 56, maxZoom: 8, duration: 800 });
+    };
+
+    if (map.loaded()) fit();
+    else map.once('load', fit);
+  }, [center, lakes]);
 
   // Render lake markers
   const addMarkers = useCallback(() => {
@@ -92,6 +113,9 @@ export function MapView({ center, zoom = 7, lakes = [], onLakeClick }: Props) {
   }, [addMarkers]);
 
   if (!TOKEN) {
+    if (import.meta.env.DEV) {
+      console.info('[CastIQ] Map is hidden because VITE_MAPBOX_ACCESS_TOKEN is not set.');
+    }
     return (
       <div className="flex h-full w-full flex-col items-center justify-center bg-castiq-blue gap-3">
         <svg className="h-12 w-12 text-castiq-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -99,8 +123,7 @@ export function MapView({ center, zoom = 7, lakes = [], onLakeClick }: Props) {
             d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
         </svg>
         <p className="text-sm text-castiq-muted text-center max-w-xs">
-          Map requires a Mapbox token.<br />
-          Set <code className="text-castiq-teal">VITE_MAPBOX_ACCESS_TOKEN</code> in <code className="text-castiq-teal">.env</code>
+          The map is unavailable right now.
         </p>
       </div>
     );

@@ -1,3 +1,4 @@
+import { lakePlaceLabel } from '../../services/dnrLakeSearch';
 import type { Lake } from '../../types/lake';
 import type { WithId } from '../../types/common';
 
@@ -12,7 +13,7 @@ export function LakeHeader({ lake }: Props) {
         <div>
           <h1 className="text-2xl font-bold text-castiq-white">{lake.name}</h1>
           <p className="text-sm text-castiq-muted">
-            {lake.county} County · DNR #{lake.dnrLakeNumber} · {lake.waterType}
+            {lakePlaceLabel(lake)} · DNR #{lake.dnrLakeNumber} · {lake.waterType}
           </p>
         </div>
         {lake.jurisdiction !== 'MN' && (

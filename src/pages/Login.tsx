@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import {
   signInWithEmail,
   signInWithGoogle,
+  completeGoogleRedirect,
   createAccount,
   ensureUserProfile,
   authErrorMessage,
@@ -29,10 +30,32 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [redirectChecked, setRedirectChecked] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
-  if (authLoading) {
+  useEffect(() => {
+    let active = true;
+    completeGoogleRedirect()
+      .then(async (authUser) => {
+        if (!authUser || !active) return;
+        const profile = await ensureUserProfile(authUser, { role: 'angler' });
+        if (!active) return;
+        navigate(profile.created ? '/onboarding' : from, { replace: true });
+      })
+      .catch((err: unknown) => {
+        console.error(err);
+        if (active) setError(authErrorMessage(err));
+      })
+      .finally(() => {
+        if (active) setRedirectChecked(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [from, navigate]);
+
+  if (authLoading || !redirectChecked) {
     return (
       <div className="flex h-screen items-center justify-center bg-castiq-blue-dark">
         <LoadingSpinner size="lg" />
@@ -48,11 +71,11 @@ export function Login() {
     authUser: Awaited<ReturnType<typeof signInWithEmail>>,
     isNew: boolean
   ) {
-    await ensureUserProfile(authUser, {
+    const profile = await ensureUserProfile(authUser, {
       role: 'angler',
       displayName: isNew ? displayName.trim() || undefined : undefined,
     });
-    navigate(from, { replace: true });
+    navigate(profile.created ? '/onboarding' : from, { replace: true });
   }
 
   async function onSubmit(e: FormEvent) {
@@ -79,14 +102,21 @@ export function Login() {
     setError(null);
     setInfo(null);
     setLoading(true);
+    let redirecting = false;
     try {
-      const u = await signInWithGoogle();
-      await ensureUserProfile(u, { role: 'angler' });
-      navigate(from, { replace: true });
+      const result = await signInWithGoogle();
+      if (result === 'redirect') {
+        redirecting = true;
+        setInfo('Opening Google sign-in…');
+        return;
+      }
+      const profile = await ensureUserProfile(result, { role: 'angler' });
+      navigate(profile.created ? '/onboarding' : from, { replace: true });
     } catch (err) {
+      console.error(err);
       setError(authErrorMessage(err));
     } finally {
-      setLoading(false);
+      if (!redirecting) setLoading(false);
     }
   }
 
@@ -238,6 +268,12 @@ export function Login() {
             </p>
           )}
         </div>
+
+        <nav className="mt-6 flex justify-center gap-4 text-xs text-castiq-muted" aria-label="Product">
+          <Link to="/pricing" className="hover:text-castiq-teal">Pricing</Link>
+          <Link to="/legal/terms" className="hover:text-castiq-teal">Terms</Link>
+          <Link to="/legal/privacy" className="hover:text-castiq-teal">Privacy</Link>
+        </nav>
       </div>
     </div>
   );

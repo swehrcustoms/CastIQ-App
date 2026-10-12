@@ -37,7 +37,6 @@ export function LurePanel({ lake, targetSpecies = 'walleye', waterTempF = 60 }: 
       nettingSurveyCPUE: 0,
       lastStockDate: null,
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lake.id, targetSpecies]);
 
   return (
