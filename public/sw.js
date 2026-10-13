@@ -1,4 +1,4 @@
-const CACHE_NAME = 'castiq-v1';
+const CACHE_NAME = 'castiq-v2';
 const STATIC_ASSETS = ['/', '/index.html'];
 
 // Install: pre-cache static shell

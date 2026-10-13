@@ -4,9 +4,22 @@ import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 
+const configuredAuthDomain = import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string;
+
+/**
+ * Mobile browsers partition storage between this site and firebaseapp.com.
+ * Google redirect sign-in has to stay on the site the angler opened.
+ */
+function authDomainForThisSite(): string {
+  if (typeof window === 'undefined') return configuredAuthDomain;
+  const host = window.location.hostname;
+  if (host === 'localhost' || host === '127.0.0.1') return configuredAuthDomain;
+  return host;
+}
+
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string,
+  authDomain: authDomainForThisSite(),
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID as string,
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET as string,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID as string,
