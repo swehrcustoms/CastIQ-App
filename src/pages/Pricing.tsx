@@ -53,11 +53,12 @@ export function Pricing() {
                   <p className="mt-1 text-2xl font-bold text-castiq-teal">{monthly.display}</p>
                 ) : (
                   <div className="mt-1">
-                    <p className="text-lg font-semibold text-red-400 line-through decoration-red-500 decoration-2">
+                    <p className="text-2xl font-bold text-castiq-teal">Annual plan: {annual.display}</p>
+                    <p className="mt-2 text-lg font-semibold text-red-400 line-through decoration-red-500 decoration-2">
                       {monthly.display}
                     </p>
-                    <p className="text-2xl font-bold text-castiq-teal">{annualPerMonth.display}</p>
-                    <p className="text-xs text-castiq-muted">Annual plan broken down by month. Billed {annual.display}.</p>
+                    <p className="text-2xl font-bold text-castiq-white">{annualPerMonth.display}</p>
+                    <p className="text-xs text-castiq-muted">Annual plan broken down by month.</p>
                   </div>
                 )}
                 <p className="mt-2 text-sm text-castiq-muted">{plan.subtitle}</p>
@@ -69,9 +70,9 @@ export function Pricing() {
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
-                <p className={`mt-4 text-sm font-medium ${interval === 'annual' ? 'text-castiq-teal' : 'text-castiq-white'}`}>
-                  {interval === 'monthly' ? `Annual plan: ${monthToMonthYear.display}` : `Annual plan: ${annual.display}`}
-                </p>
+                {interval === 'monthly' && (
+                  <p className="mt-4 text-sm font-medium text-castiq-white">Annual plan: {monthToMonthYear.display}</p>
+                )}
                 <button
                   type="button"
                   className="ciq-btn-primary mt-5"
