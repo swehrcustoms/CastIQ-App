@@ -53,7 +53,7 @@ export function Pricing() {
                   <p className="mt-1 text-2xl font-bold text-castiq-teal">{monthly.display}</p>
                 ) : (
                   <div className="mt-1">
-                    <p className="text-2xl font-bold text-castiq-teal">Annual plan: {annual.display}</p>
+                    <p className="text-2xl font-bold text-castiq-teal">{annual.display}</p>
                     <p className="mt-2 text-lg font-semibold text-red-400 line-through decoration-red-500 decoration-2">
                       {monthly.display}
                     </p>
@@ -70,9 +70,9 @@ export function Pricing() {
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
-                {interval === 'monthly' && (
-                  <p className="mt-4 text-sm font-medium text-castiq-white">Annual plan: {monthToMonthYear.display}</p>
-                )}
+                <p className="mt-4 text-sm font-medium text-castiq-white">
+                  {interval === 'monthly' ? `Annual plan: ${monthToMonthYear.display}` : `Annual plan: ${annual.display}`}
+                </p>
                 <button
                   type="button"
                   className="ciq-btn-primary mt-5"
