@@ -6,6 +6,7 @@ import { compareLakesByLatestReport, compareSearchLakes, recencyFromReports } fr
 import { consolidatedReports, latestReportsBySpecies, reportNote, uniqueReports } from '../src/utils/reportIdentity';
 import {
   annualPricePerMonth,
+  monthlyYearTotal,
   PLAN_PRICES,
   PLANS,
   PREMIUM_BULLETS,
@@ -278,6 +279,8 @@ test('four approved prices and premium inheritance', () => {
   assert.equal(priceFor('premium', 'monthly').display, '$8.99/month');
   assert.deepEqual(annualPricePerMonth('standard'), { cents: 333, display: '$3.33/month' });
   assert.deepEqual(annualPricePerMonth('premium'), { cents: 583, display: '$5.83/month' });
+  assert.deepEqual(monthlyYearTotal('standard'), { cents: 5988, display: '$59.88' });
+  assert.deepEqual(monthlyYearTotal('premium'), { cents: 10788, display: '$107.88' });
   assert.equal(PRICING_HERO.title, "Find out what's biting.");
   assert.match(PRICING_HERO.description, /spend less time searching for information and more time fishing/);
   assert.equal(PLANS[0].subtitle, 'Everything you need to plan your next fishing trip.');

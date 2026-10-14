@@ -98,6 +98,12 @@ export function annualPricePerMonth(tier: PlanTier): { cents: number; display: s
   return { cents, display: `$${(cents / 100).toFixed(2)}/month` };
 }
 
+/** Twelve month-to-month payments. This is not the discounted annual charge. */
+export function monthlyYearTotal(tier: PlanTier): { cents: number; display: string } {
+  const cents = priceFor(tier, 'monthly').cents * 12;
+  return { cents, display: `$${(cents / 100).toFixed(2)}` };
+}
+
 export function tierHasEntitlement(tier: PlanTier, key: EntitlementKey): boolean {
   return ENTITLEMENTS[key][tier];
 }

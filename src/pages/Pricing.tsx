@@ -8,6 +8,7 @@ import {
   PRICING_DISCLAIMER,
   PRICING_HERO,
   annualPricePerMonth,
+  monthlyYearTotal,
   priceFor,
   type BillingInterval,
 } from '../data/pricing';
@@ -43,6 +44,7 @@ export function Pricing() {
           const monthly = priceFor(plan.tier, 'monthly');
           const annual = priceFor(plan.tier, 'annual');
           const annualPerMonth = annualPricePerMonth(plan.tier);
+          const monthToMonthYear = monthlyYearTotal(plan.tier);
           return (
             <li key={plan.tier}>
               <AppCard className={`flex h-full flex-col ${plan.tier === 'premium' ? 'ring-1 ring-castiq-teal' : ''}`}>
@@ -68,7 +70,7 @@ export function Pricing() {
                   ))}
                 </ul>
                 <p className={`mt-4 text-sm font-medium ${interval === 'annual' ? 'text-castiq-teal' : 'text-castiq-white'}`}>
-                  Annual plan: {annual.display}
+                  {interval === 'monthly' ? `Annual plan: ${monthToMonthYear.display}` : `Annual plan: ${annual.display}`}
                 </p>
                 <button
                   type="button"
