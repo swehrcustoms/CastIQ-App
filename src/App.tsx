@@ -6,6 +6,10 @@ import { IceFishing } from './pages/IceFishing';
 import { Pricing } from './pages/Pricing';
 import { Guides } from './pages/Guides';
 import { About } from './pages/About';
+import { Social } from './pages/Social';
+import { BorderWaters } from './pages/BorderWaters';
+import { Regulations } from './pages/Regulations';
+import { SubmitReport } from './pages/SubmitReport';
 import { Terms } from './pages/Terms';
 import { Privacy } from './pages/Privacy';
 import { NotFound } from './pages/NotFound';
@@ -53,6 +57,10 @@ export default function App() {
           <Route path="/tactics" element={<Guides />} />
           <Route path="/guides" element={<Navigate to="/tactics" replace />} />
           <Route path="/about" element={<About />} />
+          <Route path="/social" element={<Social />} />
+          <Route path="/border-waters" element={<BorderWaters />} />
+          <Route path="/regulations" element={<Regulations />} />
+          <Route path="/submit-report" element={<SubmitReport />} />
           <Route path="/legal/terms" element={<Terms />} />
           <Route path="/legal/privacy" element={<Privacy />} />
         </Route>
@@ -64,13 +72,9 @@ export default function App() {
           <Route path="/lake/:lakeId/live" element={<LakeRedirect />} />
           <Route path="/lake/:lakeId/fisheries" element={<LakeRedirect tab="surveys" />} />
           <Route path="/lake/:lakeId/contours" element={<LakeRedirect />} />
-          <Route path="/border-waters" element={<Navigate to="/search" replace />} />
-          <Route path="/regulations" element={<Navigate to="/search" replace />} />
-          <Route path="/submit-report" element={<Navigate to="/search" replace />} />
           <Route path="/ice" element={<IceFishing />} />
           <Route path="/guide" element={<Navigate to="/search" replace />} />
           <Route path="/profile" element={<Navigate to="/search" replace />} />
-          <Route path="/social" element={<Navigate to="/search" replace />} />
           <Route path="/onboarding" element={<Navigate to="/search" replace />} />
           <Route path="*" element={<NotFound />} />
         </Route>
