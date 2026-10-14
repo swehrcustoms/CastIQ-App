@@ -14,12 +14,13 @@ interface Props {
   selected: string;
   onChange: (species: string) => void;
   className?: string;
+  options?: { id: string; label: string }[];
 }
 
-export function SpeciesChips({ selected, onChange, className = '' }: Props) {
+export function SpeciesChips({ selected, onChange, className = '', options = SPECIES_OPTIONS }: Props) {
   return (
     <div className={`flex gap-2 overflow-x-auto scrollbar-hide ${className}`}>
-      {SPECIES_OPTIONS.map((s) => (
+      {options.map((s) => (
         <button
           key={s.id}
           onClick={() => onChange(s.id)}

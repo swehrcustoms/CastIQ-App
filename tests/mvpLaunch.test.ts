@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { chipsForLake } from '../src/utils/species';
 import { compareLakesByLatestReport } from '../src/utils/lakeSort';
 import { consolidatedReports, latestReportsBySpecies, reportNote, uniqueReports } from '../src/utils/reportIdentity';
 import { PLAN_PRICES, priceFor, tierHasEntitlement } from '../src/data/pricing';
@@ -165,6 +166,16 @@ test('one report that names two species is shown once', () => {
   assert.equal(cards.length, 1);
   assert.deepEqual(cards[0].species.sort(), ['sauger', 'walleye']);
   assert.equal(reportNote(report), report.conditions);
+});
+
+test('a lake keeps the standard species order and drops species it does not have', () => {
+  const labels = chipsForLake(['largemouth bass', 'northern pike', 'walleye', 'muskie', 'crappie'])
+    .map((chip) => chip.label);
+  assert.deepEqual(labels, ['All', 'Walleye', 'Bass', 'Pike', 'Muskie', 'Crappie']);
+  assert.deepEqual(
+    chipsForLake(['smallmouth bass', 'lake trout']).map((chip) => chip.label),
+    ['All', 'Bass', 'Trout'],
+  );
 });
 
 test('four approved prices and premium inheritance', () => {

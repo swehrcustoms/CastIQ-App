@@ -10,7 +10,7 @@ import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { SpeciesChips } from '../components/shared/SpeciesChips';
 import { SurveysStockingPanel } from '../components/lake/SurveysStockingPanel';
 import { useLakeReports } from '../hooks/useLakeReports';
-import { speciesMatches } from '../utils/species';
+import { chipsForLake, speciesMatches } from '../utils/species';
 import type { Lake } from '../types/lake';
 import type { WithId } from '../types/common';
 
@@ -24,6 +24,7 @@ export function LakeDetail() {
   const tabParam = searchParams.get('tab');
   const activeTab: LakeTab = isLakeTab(tabParam) ? tabParam : 'overview';
   const [selectedSpecies, setSelectedSpecies] = useState('all');
+  const lakeChips = chipsForLake(lake?.speciesPresent);
   const { reports, loading: reportsLoading, error: reportsError } = useLakeReports(lakeId);
   const visibleReports = selectedSpecies === 'all'
     ? reports
@@ -56,6 +57,10 @@ export function LakeDetail() {
       cancelled = true;
     };
   }, [lakeId]);
+
+  useEffect(() => {
+    if (!lakeChips.some((chip) => chip.id === selectedSpecies)) setSelectedSpecies('all');
+  }, [lakeChips, selectedSpecies]);
 
   function selectTab(tab: LakeTab) {
     setSearchParams(tab === 'overview' ? {} : { tab }, { replace: true });
@@ -121,7 +126,7 @@ export function LakeDetail() {
           {activeTab === 'overview' && (
             <div className="grid gap-4 lg:grid-cols-3">
               <div className="lg:col-span-2 space-y-4">
-                <SpeciesChips selected={selectedSpecies} onChange={setSelectedSpecies} />
+                <SpeciesChips selected={selectedSpecies} onChange={setSelectedSpecies} options={lakeChips} />
                 <LakeOverview
                   species={selectedSpecies}
                   reports={visibleReports}
