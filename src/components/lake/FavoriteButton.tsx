@@ -31,7 +31,7 @@ export function FavoriteButton({ lakeId }: { lakeId: string }) {
         aria-pressed={saved}
         className={`ciq-btn-secondary ${saved ? 'text-castiq-teal' : ''}`}
       >
-        {saved ? 'Saved lake' : 'Save lake'}
+        {saved ? 'Unfavorite' : 'Favorite'}
       </button>
       {error && <p className="text-xs text-castiq-red">{error}</p>}
     </div>

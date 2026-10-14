@@ -152,33 +152,36 @@ function Favorites({ ids, uid }: { ids: string[]; uid: string }) {
       <SectionHeader title="Favorite lakes" />
       {loading && <SkeletonCard />}
       {error && <ErrorState title="We couldn't load your saved lakes." onRetry={reload} />}
-      {!loading && !error && data.length === 0 && (
+      {!loading && !error && ids.length === 0 && (
         <EmptyState
-          title="No saved lakes yet."
-          message="Save a lake from its page and it will stay here."
+          title="No favorite lakes yet."
+          message="Open a lake from Search and choose Favorite. It will stay here."
           action={<Link to="/search" className="ciq-btn-primary">Search lakes</Link>}
         />
       )}
-      {!loading && !error && data.length > 0 && (
+      {!loading && !error && ids.length > 0 && (
         <ul className="grid gap-3 sm:grid-cols-2">
-          {data.map((lake) => (
-            <li key={lake.id} className="ciq-card flex items-center justify-between gap-3 p-4">
-              <div>
-                <Link to={`/lake/${lake.id}`} className="font-medium text-castiq-white hover:text-castiq-teal">
-                  {lake.name}
-                </Link>
-                <p className="text-xs text-castiq-muted">{lake.county} County</p>
-              </div>
-              <button
-                type="button"
-                className="text-sm text-castiq-muted hover:text-castiq-white"
-                disabled={busyId === lake.id}
-                onClick={() => void remove(lake.id)}
-              >
-                Remove
-              </button>
-            </li>
-          ))}
+          {ids.map((id) => {
+            const lake = data.find((item) => item.id === id);
+            return (
+              <li key={id} className="ciq-card flex items-center justify-between gap-3 p-4">
+                <div>
+                  <Link to={`/lake/${id}`} className="font-medium text-castiq-white hover:text-castiq-teal">
+                    {lake?.name ?? 'Saved lake'}
+                  </Link>
+                  {lake?.county && <p className="text-xs text-castiq-muted">{lake.county} County</p>}
+                </div>
+                <button
+                  type="button"
+                  className="text-sm text-castiq-muted hover:text-castiq-white"
+                  disabled={busyId === id}
+                  onClick={() => void remove(id)}
+                >
+                  Unfavorite
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
     </section>

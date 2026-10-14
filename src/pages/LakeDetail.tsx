@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { fetchDnrLake } from '../services/dnrLakeSearch';
 import { db } from '../services/firebase';
+import { FavoriteButton } from '../components/lake/FavoriteButton';
 import { LakeHeader } from '../components/lake/LakeHeader';
 import { LakeOverview } from '../components/lake/LakeOverview';
 import { LakeTabNav, isLakeTab, type LakeTab } from '../components/lake/LakeTabNav';
@@ -135,6 +136,7 @@ export function LakeDetail() {
           <div className="min-w-0 flex-1">
             <LakeHeader lake={{ ...lake, speciesPresent: speciesForPage ?? [] }} />
           </div>
+          <FavoriteButton lakeId={lake.id} />
         </div>
 
         <div className="px-4">
