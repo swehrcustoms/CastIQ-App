@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { User } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { onAuthChange } from '../services/auth';
+import { completeGoogleRedirect, onAuthChange } from '../services/auth';
 import { db } from '../services/firebase';
 import type { CastIQUser } from '../types/user';
 import type { WithId } from '../types/common';
@@ -18,38 +18,46 @@ export function useAuth(): AuthState {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     let unsubProfile: (() => void) | undefined;
+    let unsubAuth: (() => void) | undefined;
 
-    const unsubAuth = onAuthChange((u) => {
-      unsubProfile?.();
-      unsubProfile = undefined;
-      setUser(u);
+    void completeGoogleRedirect()
+      .catch(() => null)
+      .finally(() => {
+        if (cancelled) return;
+        unsubAuth = onAuthChange((nextUser) => {
+          unsubProfile?.();
+          unsubProfile = undefined;
+          setUser(nextUser);
 
-      if (!u) {
-        setProfile(null);
-        setLoading(false);
-        return;
-      }
+          if (!nextUser) {
+            setProfile(null);
+            setLoading(false);
+            return;
+          }
 
-      unsubProfile = onSnapshot(
-        doc(db, 'users', u.uid),
-        (snap) => {
-          setProfile(
-            snap.exists()
-              ? ({ id: snap.id, ...snap.data() } as WithId<CastIQUser>)
-              : null
+          unsubProfile = onSnapshot(
+            doc(db, 'users', nextUser.uid),
+            (snap) => {
+              setProfile(
+                snap.exists()
+                  ? ({ id: snap.id, ...snap.data() } as WithId<CastIQUser>)
+                  : null,
+              );
+              setLoading(false);
+            },
+            () => {
+              setProfile(null);
+              setLoading(false);
+            },
           );
-          setLoading(false);
-        },
-        () => {
-          setProfile(null);
-          setLoading(false);
-        }
-      );
-    });
+        });
+      });
 
     return () => {
-      unsubAuth();
+      cancelled = true;
+      unsubAuth?.();
       unsubProfile?.();
     };
   }, []);

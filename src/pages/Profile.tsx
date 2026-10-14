@@ -26,7 +26,20 @@ export function Profile() {
     );
   }
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <PageContainer>
+        <PageHeader
+          eyebrow="Account"
+          title="Profile"
+          subtitle="Sign in to update your name, saved lakes, and notification choices."
+        />
+        <Link to="/login" state={{ from: '/profile' }} className="ciq-btn-primary">
+          Sign in
+        </Link>
+      </PageContainer>
+    );
+  }
 
   const name = profile?.displayName || user.displayName || 'Angler';
   const initial = name.charAt(0).toUpperCase();
@@ -212,12 +225,13 @@ function Alerts({ prefs, uid }: { prefs: CastIQUser['alertPreferences'] | undefi
             ))}
           </div>
         </div>
-        <p className="text-xs text-castiq-muted">Coming soon. CastIQ does not send alert notifications yet.</p>
+        <p className="text-xs text-castiq-muted">
+          A report-freshness alert would be sent only for a lake you saved, and only when a new public fishing report is saved for that lake. CastIQ does not send alerts yet. These choices are saved for that later step.
+        </p>
         <Toggle
-          label="Report freshness — Coming soon"
-          checked={false}
-          disabled
-          onChange={() => undefined}
+          label="Report freshness"
+          checked={current.reportRecency}
+          onChange={(checked) => void update({ ...current, reportRecency: checked })}
         />
         <Toggle
           label="Winterkill alerts"

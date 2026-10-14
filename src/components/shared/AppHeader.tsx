@@ -1,11 +1,8 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
-import { signOutUser } from '../../services/auth';
-import { useAuth } from '../../hooks/useAuth';
 import { MORE_LINKS, TOP_LINKS } from '../nav/links';
 
 export function AppHeader() {
-  const { user } = useAuth();
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
   const moreActive = MORE_LINKS.some((item) => location.pathname === item.to);
@@ -66,20 +63,15 @@ export function AppHeader() {
           </div>
         </nav>
 
-        <div className="ml-auto flex items-center gap-3">
-          {user ? (
-            <button
-              type="button"
-              onClick={() => void signOutUser()}
-              className="text-xs font-medium text-castiq-muted hover:text-castiq-white"
-            >
-              Sign out
-            </button>
-          ) : (
-            <Link to="/login" className="text-xs font-medium text-castiq-teal hover:underline">
-              Sign in
-            </Link>
-          )}
+        <div className="ml-auto">
+          <Link
+            to="/profile"
+            className={`text-xs font-medium ${
+              location.pathname === '/profile' ? 'text-castiq-teal' : 'text-castiq-muted hover:text-castiq-white'
+            }`}
+          >
+            Profile
+          </Link>
         </div>
       </div>
     </header>

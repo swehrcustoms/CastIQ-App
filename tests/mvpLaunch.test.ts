@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { chipsForLake, speciesShownForLake } from '../src/utils/species';
+import { pickRegulationHit } from '../src/services/dnrLakeSearch';
 import { compareLakesByLatestReport, compareSearchLakes, recencyFromReports } from '../src/utils/lakeSort';
 import { consolidatedReports, latestReportsBySpecies, reportNote, uniqueReports } from '../src/utils/reportIdentity';
 import {
@@ -251,6 +252,22 @@ test('lake species pills and filter chips follow the same DNR species', () => {
     'black crappie',
     'yellow perch',
   ]);
+});
+
+test('a lake regulation lookup stays on the water that was named', () => {
+  const match = pickRegulationHit(
+    [
+      { id: '48025900', name: 'Other Lake', county: 'Aitkin', pca_id: '48-0259-00' },
+      { id: '48000200', name: 'Mille Lacs', county: 'Mille Lacs', pca_id: '48-0002-00' },
+    ],
+    { id: '48-0259-00', name: 'Mille Lacs', county: 'Mille Lacs' },
+  );
+  assert.equal(match?.id, '48000200');
+  const exact = pickRegulationHit(
+    [{ id: '27013300', name: 'Minnetonka', county: 'Hennepin', pca_id: null }],
+    { id: '27-0133-00', name: 'Minnetonka', county: 'Hennepin' },
+  );
+  assert.equal(exact?.id, '27013300');
 });
 
 test('four approved prices and premium inheritance', () => {

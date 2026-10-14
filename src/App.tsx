@@ -13,6 +13,8 @@ import { SubmitReport } from './pages/SubmitReport';
 import { Terms } from './pages/Terms';
 import { Privacy } from './pages/Privacy';
 import { NotFound } from './pages/NotFound';
+import { Profile } from './pages/Profile';
+import { Onboarding } from './pages/Onboarding';
 import { ProtectedRoute } from './components/shared/ProtectedRoute';
 import { AppHeader } from './components/shared/AppHeader';
 import { AppNav } from './components/nav/AppNav';
@@ -63,6 +65,7 @@ export default function App() {
           <Route path="/submit-report" element={<SubmitReport />} />
           <Route path="/legal/terms" element={<Terms />} />
           <Route path="/legal/privacy" element={<Privacy />} />
+          <Route path="/profile" element={<Profile />} />
         </Route>
 
         <Route element={<AuthenticatedShell />}>
@@ -74,8 +77,7 @@ export default function App() {
           <Route path="/lake/:lakeId/contours" element={<LakeRedirect />} />
           <Route path="/ice" element={<IceFishing />} />
           <Route path="/guide" element={<Navigate to="/search" replace />} />
-          <Route path="/profile" element={<Navigate to="/search" replace />} />
-          <Route path="/onboarding" element={<Navigate to="/search" replace />} />
+          <Route path="/onboarding" element={<Onboarding />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

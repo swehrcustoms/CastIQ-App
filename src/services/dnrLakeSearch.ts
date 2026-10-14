@@ -110,7 +110,7 @@ function displayName(name: string, waterType: Lake['waterType'], town?: string):
   return trimmed;
 }
 
-function formatDow(raw: DnrLakeRaw): string {
+function formatDow(raw: Pick<DnrLakeRaw, 'id' | 'pca_id'>): string {
   if (raw.pca_id && /^\d{2}-\d{4}-\d{2}$/.test(raw.pca_id)) return raw.pca_id;
   const digits = String(raw.id ?? '').replace(/\D/g, '');
   if (digits.length === 8) return `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6)}`;
@@ -258,6 +258,23 @@ function specialRegulationsFrom(raw: DnrLakeRaw | undefined): LakeSpecialRegulat
   );
 }
 
+export function pickRegulationHit<T extends Pick<DnrLakeRaw, 'id' | 'name' | 'county' | 'pca_id'>>(
+  hits: T[],
+  lake: { id: string; name: string; county?: string },
+): T | null {
+  const name = compactName(lake.name);
+  const county = (lake.county ?? '').trim().toLowerCase();
+  const named = hits.filter((hit) => compactName(hit.name ?? '') === name);
+  if (county) {
+    const sameCounty = named.find((hit) => (hit.county ?? '').trim().toLowerCase() === county);
+    if (sameCounty) return sameCounty;
+  }
+  const sameWater = named.find((hit) => formatDow(hit) === lake.id);
+  if (sameWater) return sameWater;
+  if (named.length === 1) return named[0];
+  return null;
+}
+
 export async function fetchDnrSpecialRegulations(lake: {
   id: string;
   name: string;
@@ -265,14 +282,11 @@ export async function fetchDnrSpecialRegulations(lake: {
 }): Promise<LakeSpecialRegulation[]> {
   const digits = lake.id.replace(/\D/g, '');
   if (digits.length >= 6) {
-    const hits = await fetchDnr({ id: digits });
-    const match = hits.find((hit) => formatDow(hit) === lake.id) ?? hits[0];
-    if (match) return specialRegulationsFrom(match);
+    const byId = pickRegulationHit(await fetchDnr({ id: digits }), lake);
+    if (byId) return specialRegulationsFrom(byId);
   }
 
-  const hits = await fetchDnr({ name: lake.name });
-  const named = hits.filter((hit) => compactName(hit.name ?? '') === compactName(lake.name));
-  const county = (lake.county ?? '').trim().toLowerCase();
-  const match = named.find((hit) => (hit.county ?? '').trim().toLowerCase() === county) ?? named[0];
-  return specialRegulationsFrom(match);
+  const queryName = lake.name.replace(/^\s*lake\s+/i, '').trim() || lake.name;
+  const byName = pickRegulationHit(await fetchDnr({ name: queryName }), lake);
+  return specialRegulationsFrom(byName ?? undefined);
 }

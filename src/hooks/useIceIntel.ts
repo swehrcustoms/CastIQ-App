@@ -1,40 +1,57 @@
-import { getDocs, limit, orderBy, query } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { limit, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { Collections } from '../services/firestore';
 import { fetchLakesByIds } from '../services/lakes';
-import { useAsyncData } from './useAsyncData';
 import { docsOf } from '../utils/firestoreDocs';
-import type { IceReport, IceRoad, WinterkillEvent } from '../types/events';
+import type { IceReport } from '../types/events';
 import type { Lake } from '../types/lake';
 import type { WithId } from '../types/common';
 
 export interface IceIntelData {
   reports: WithId<IceReport>[];
-  roads: WithId<IceRoad>[];
-  winterkill: WithId<WinterkillEvent>[];
   lakes: WithId<Lake>[];
 }
 
-const EMPTY: IceIntelData = { reports: [], roads: [], winterkill: [], lakes: [] };
+const EMPTY: IceIntelData = { reports: [], lakes: [] };
 
 export function useIceIntel() {
-  return useAsyncData<IceIntelData>(
-    EMPTY,
-    async () => {
-      const [reportsSnap, roadsSnap, winterkillSnap] = await Promise.all([
-        getDocs(query(Collections.iceReports, orderBy('reportDate', 'desc'), limit(80))),
-        getDocs(query(Collections.iceRoads, limit(40))),
-        getDocs(query(Collections.winterkillEvents, orderBy('eventYear', 'desc'), limit(12))),
-      ]);
-      const reports = docsOf<IceReport>(reportsSnap);
-      const roads = docsOf<IceRoad>(roadsSnap);
-      const winterkill = docsOf<WinterkillEvent>(winterkillSnap);
-      const lakes = await fetchLakesByIds([
-        ...reports.map((report) => report.lakeId),
-        ...roads.map((road) => road.lakeId),
-        ...winterkill.map((event) => event.lakeId),
-      ]);
-      return { reports, roads, winterkill, lakes };
-    },
-    [],
-  );
+  const [data, setData] = useState<IceIntelData>(EMPTY);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [retry, setRetry] = useState(0);
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    const reportsQuery = query(Collections.iceReports, orderBy('reportDate', 'desc'), limit(80));
+    return onSnapshot(
+      reportsQuery,
+      (snap) => {
+        const reports = docsOf<IceReport>(snap);
+        void fetchLakesByIds(reports.map((report) => report.lakeId))
+          .then((lakes) => {
+            setData({ reports, lakes });
+            setLoading(false);
+          })
+          .catch((err: unknown) => {
+            console.error(err);
+            setData({ reports, lakes: [] });
+            setLoading(false);
+          });
+      },
+      (err: unknown) => {
+        console.error(err);
+        setData(EMPTY);
+        setError(err instanceof Error ? err : new Error('Failed to load ice reports'));
+        setLoading(false);
+      },
+    );
+  }, [retry]);
+
+  return {
+    data,
+    loading,
+    error,
+    reload: () => setRetry((value) => value + 1),
+  };
 }

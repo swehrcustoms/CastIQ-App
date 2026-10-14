@@ -48,7 +48,7 @@ export function Regulations() {
   const [specialsError, setSpecialsError] = useState<string | null>(null);
 
   const { results, loading: searchLoading } = useLakeSearch(lakeQuery, {}, 10);
-  const showingLakeRules = Boolean(selectedLake && (specialsLoading || specials.length > 0) && !specialsError);
+  const inlandLake = Boolean(selectedLake && selectedLake.borderWater !== true);
 
   useEffect(() => {
     if (!selectedLake) {
@@ -117,6 +117,9 @@ export function Regulations() {
                   key={lake.id}
                   type="button"
                   onClick={() => {
+                    setSpecials([]);
+                    setSpecialsError(null);
+                    setSpecialsLoading(true);
                     setSelectedLake(lake);
                     setLakeQuery('');
                   }}
@@ -159,7 +162,9 @@ export function Regulations() {
 
             {!specialsLoading && !specialsError && specials.length === 0 && (
               <p className="text-sm text-castiq-muted">
-                No special regulations are listed for this water. The statewide rules below apply.
+                {selectedLake.borderWater
+                  ? 'The DNR does not list a special regulation for this border water in the lake record.'
+                  : 'The DNR does not list a special regulation for this lake. The statewide inland rules below apply.'}
               </p>
             )}
 
@@ -181,15 +186,16 @@ export function Regulations() {
         )}
       </section>
 
-      {!showingLakeRules && (
+      {(!selectedLake || inlandLake) && (
         <section className="space-y-6">
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-wide text-castiq-muted">
-              Statewide inland rules ({STATEWIDE_YEAR})
+              {selectedLake ? `Statewide inland rules for ${selectedLake.name}` : `Statewide inland rules (${STATEWIDE_YEAR})`}
             </h2>
             <p className="mt-1 text-xs text-castiq-muted">
-              Daily and possession limits are the same unless a species says otherwise. A lake can replace
-              these with a special regulation.
+              {selectedLake
+                ? `These ${STATEWIDE_YEAR} inland rules apply to ${selectedLake.name} except where a special regulation above says otherwise.`
+                : 'Daily and possession limits are the same unless a species says otherwise. A lake can replace these with a special regulation.'}
             </p>
           </div>
           {STATEWIDE_GROUPS.map((group) => (

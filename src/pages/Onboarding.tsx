@@ -154,9 +154,11 @@ export function Onboarding() {
         {step === 3 && (
           <>
             <h1 className="text-2xl font-bold text-castiq-white">Which alerts would you like?</h1>
-            <p className="mt-2 text-sm text-castiq-muted">CastIQ does not send these alerts yet. Preferences are saved for a later release.</p>
+            <p className="mt-2 text-sm text-castiq-muted">
+              A report-freshness alert would be sent only for a lake you saved, and only when a new public fishing report is saved for that lake. CastIQ does not send alerts yet. Your choices are saved for that later step.
+            </p>
             <div className="mt-4 space-y-3">
-              <AlertRow label="Report freshness — Coming soon" checked={false} disabled onChange={() => undefined} />
+              <AlertRow label="Report freshness" checked={alerts.reportRecency} onChange={(checked) => setAlerts((current) => ({ ...current, reportRecency: checked }))} />
               <AlertRow label="Winterkill" checked={alerts.winterkillAlerts} onChange={(checked) => setAlerts((current) => ({ ...current, winterkillAlerts: checked }))} />
               <AlertRow label="Ice reports" checked={alerts.iceReports} onChange={(checked) => setAlerts((current) => ({ ...current, iceReports: checked }))} />
             </div>

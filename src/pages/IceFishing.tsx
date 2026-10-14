@@ -1,10 +1,16 @@
 import { useMemo, useState } from 'react';
+import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { addDoc, serverTimestamp } from 'firebase/firestore';
 import { PageContainer, PageHeader, SourceFooter } from '../components/ui/Chrome';
 import { AppCard, DataFreshnessBadge, FilterChip } from '../components/ui/Data';
 import { AlertBanner, EmptyState, ErrorState, SkeletonGrid } from '../components/ui/States';
+import { useAuth } from '../hooks/useAuth';
 import { useIceIntel } from '../hooks/useIceIntel';
+import { useLakeSearch } from '../hooks/useLakeSearch';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { Collections } from '../services/firestore';
+import { lakePlaceLabel } from '../services/dnrLakeSearch';
 import { formatTimestamp, hoursSince, toDate } from '../utils/dates';
 import type { IceReport } from '../types/events';
 import type { WithId } from '../types/common';
@@ -30,6 +36,7 @@ function sourceLabel(submittedBy: string): string {
 }
 
 export function IceFishing() {
+  const { user } = useAuth();
   const { data, loading, error, reload } = useIceIntel();
   const [search, setSearch] = useState('');
   const [county, setCounty] = useState('all');
@@ -72,6 +79,8 @@ export function IceFishing() {
           Reported ice thickness is informational only. Ice conditions vary across a lake and can change rapidly. No report guarantees safe ice. Verify conditions locally before travel.
         </AlertBanner>
       </div>
+
+      <IceReportForm signedIn={Boolean(user)} userId={user?.uid ?? ''} />
 
       {loading && <SkeletonGrid count={3} />}
       {error && <ErrorState title="We couldn't load ice reports." onRetry={reload} />}
@@ -126,7 +135,7 @@ export function IceFishing() {
             <EmptyState
               title="No ice reports match."
               message={data.reports.length === 0
-                ? 'No ice thickness reports have been published yet.'
+                ? 'No ice thickness reports have been published yet. A report appears here as soon as it is saved.'
                 : 'Try a wider freshness window or clear the filters.'}
             />
           ) : (
@@ -146,6 +155,120 @@ export function IceFishing() {
   );
 }
 
+function IceReportForm({ signedIn, userId }: { signedIn: boolean; userId: string }) {
+  const [query, setQuery] = useState('');
+  const [lakeId, setLakeId] = useState('');
+  const [lakeName, setLakeName] = useState('');
+  const [county, setCounty] = useState('');
+  const [total, setTotal] = useState('');
+  const [notes, setNotes] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const { results, loading } = useLakeSearch(query, {}, 6);
+  const inches = Number(total);
+  const ready = signedIn && lakeId && Number.isFinite(inches) && inches >= 0 && inches <= 60;
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (!ready) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      await addDoc(Collections.iceReports, {
+        reportId: '',
+        lakeId,
+        county,
+        reportDate: serverTimestamp(),
+        iceTotalIn: inches,
+        iceBlackIn: 0,
+        iceWhiteIn: 0,
+        snowDepthIn: 0,
+        safetyRating: 'caution',
+        accessPoints: [],
+        fishingConditions: notes.trim(),
+        submittedBy: userId,
+        userId,
+        verified: false,
+      });
+      setTotal('');
+      setNotes('');
+      setMessage(`Saved the ${inches} in report for ${lakeName}. It is one measurement, not a lake-wide condition.`);
+    } catch (err) {
+      console.error(err);
+      setMessage('That ice report could not be saved.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={(event) => void submit(event)} className="mb-6 space-y-3 rounded-xl bg-castiq-blue p-4">
+      <h2 className="text-sm font-semibold text-castiq-white">Add a thickness report</h2>
+      <p className="text-xs text-castiq-muted">
+        Enter a measurement you made. It shows on this page as soon as it is saved, marked unverified.
+      </p>
+      {!signedIn && <p className="text-sm text-castiq-muted">Sign in from Profile to add an ice report.</p>}
+      {signedIn && (
+        <>
+          <input
+            className="ciq-input"
+            value={lakeName || query}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setLakeId('');
+              setLakeName('');
+              setCounty('');
+            }}
+            placeholder="Search the lake you measured"
+            aria-label="Lake for this ice report"
+          />
+          {query && !lakeId && (
+            <ul className="max-h-40 overflow-y-auto rounded-lg bg-castiq-blue-dark">
+              {loading && <li className="px-3 py-2 text-sm text-castiq-muted">Searching…</li>}
+              {!loading && results.length === 0 && <li className="px-3 py-2 text-sm text-castiq-muted">No lakes match that name.</li>}
+              {results.map((lake) => (
+                <li key={lake.id}>
+                  <button
+                    type="button"
+                    className="block w-full px-3 py-2 text-left text-sm text-castiq-white hover:bg-castiq-blue"
+                    onClick={() => {
+                      setLakeId(lake.id);
+                      setLakeName(lake.name);
+                      setCounty(lake.county ?? '');
+                      setQuery('');
+                    }}
+                  >
+                    {lake.name}
+                    <span className="ml-2 text-xs text-castiq-muted">{lakePlaceLabel(lake)}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <label className="block text-sm text-castiq-muted">
+            Total ice thickness (inches)
+            <input
+              className="ciq-input mt-1"
+              inputMode="decimal"
+              value={total}
+              onChange={(event) => setTotal(event.target.value)}
+              placeholder="0"
+            />
+          </label>
+          <label className="block text-sm text-castiq-muted">
+            Where you measured it
+            <input className="ciq-input mt-1" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Access or bay" />
+          </label>
+          <button type="submit" className="ciq-btn-primary" disabled={!ready || busy}>
+            {busy ? 'Saving…' : 'Save ice report'}
+          </button>
+        </>
+      )}
+      {message && <p className="text-sm text-castiq-muted">{message}</p>}
+    </form>
+  );
+}
+
 function IceCard({ report, lakeName }: { report: WithId<IceReport>; lakeName?: string }) {
   const date = toDate(report.reportDate);
   const status = caution(report, date);
@@ -159,9 +282,15 @@ function IceCard({ report, lakeName }: { report: WithId<IceReport>; lakeName?: s
           <span className={`text-xs font-medium ${status.className}`}>{status.label}</span>
         </div>
         <p className="mt-2 text-2xl font-semibold text-castiq-white">{report.iceTotalIn} in</p>
-        <p className="text-xs text-castiq-muted">
-          Black {report.iceBlackIn} in · White {report.iceWhiteIn} in · Snow {report.snowDepthIn} in
-        </p>
+        {(report.iceBlackIn > 0 || report.iceWhiteIn > 0 || report.snowDepthIn > 0) && (
+          <p className="text-xs text-castiq-muted">
+            {[
+              report.iceBlackIn > 0 ? `Black ${report.iceBlackIn} in` : null,
+              report.iceWhiteIn > 0 ? `White ${report.iceWhiteIn} in` : null,
+              report.snowDepthIn > 0 ? `Snow ${report.snowDepthIn} in` : null,
+            ].filter(Boolean).join(' · ')}
+          </p>
+        )}
         <p className="mt-2 text-sm text-castiq-muted">{formatTimestamp(date)}</p>
         {report.accessPoints?.length > 0 && (
           <p className="mt-2 text-sm text-castiq-white">Access · {report.accessPoints.join(', ')}</p>
