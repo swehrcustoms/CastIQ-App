@@ -1,12 +1,14 @@
 import { lakePlaceLabel } from '../../services/dnrLakeSearch';
 import type { Lake } from '../../types/lake';
 import type { WithId } from '../../types/common';
+import { speciesLabel, speciesShownForLake } from '../../utils/species';
 
 interface Props {
   lake: WithId<Lake>;
 }
 
 export function LakeHeader({ lake }: Props) {
+  const species = speciesShownForLake(lake.speciesPresent);
   return (
     <div className="space-y-2">
       <div className="flex items-start justify-between gap-4">
@@ -52,15 +54,14 @@ export function LakeHeader({ lake }: Props) {
         </div>
       )}
 
-      {/* Species chips */}
-      {lake.speciesPresent && lake.speciesPresent.length > 0 && (
+      {species.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {lake.speciesPresent.slice(0, 8).map((s) => (
+          {species.map((s) => (
             <span
               key={s}
-              className="rounded-full bg-castiq-blue px-2.5 py-0.5 text-xs capitalize text-castiq-muted"
+              className="rounded-full bg-castiq-blue px-2.5 py-0.5 text-xs text-castiq-muted"
             >
-              {s.replace('_', ' ')}
+              {speciesLabel(s)}
             </span>
           ))}
         </div>

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { chipsForLake } from '../src/utils/species';
+import { chipsForLake, speciesShownForLake } from '../src/utils/species';
 import { compareLakesByLatestReport } from '../src/utils/lakeSort';
 import { consolidatedReports, latestReportsBySpecies, reportNote, uniqueReports } from '../src/utils/reportIdentity';
 import { PLAN_PRICES, priceFor, tierHasEntitlement } from '../src/data/pricing';
@@ -176,6 +176,47 @@ test('a lake keeps the standard species order and drops species it does not have
     chipsForLake(['smallmouth bass', 'lake trout']).map((chip) => chip.label),
     ['All', 'Bass', 'Trout'],
   );
+});
+
+test('lake species pills and filter chips follow the same DNR species', () => {
+  const dnr = [
+    'black bullhead',
+    'black crappie',
+    'bluegill',
+    'bowfin (dogfish)',
+    'common carp',
+    'green sunfish',
+    'largemouth bass',
+    'muskellunge',
+    'northern pike',
+    'rock bass',
+    'smallmouth bass',
+    'walleye',
+    'white sucker',
+    'yellow perch',
+  ];
+  assert.deepEqual(chipsForLake(dnr).map((chip) => chip.label), [
+    'All',
+    'Walleye',
+    'Bass',
+    'Pike',
+    'Panfish',
+    'Muskie',
+    'Crappie',
+    'Perch',
+  ]);
+  assert.deepEqual(speciesShownForLake(dnr), [
+    'walleye',
+    'largemouth bass',
+    'smallmouth bass',
+    'northern pike',
+    'bluegill',
+    'green sunfish',
+    'rock bass',
+    'muskellunge',
+    'black crappie',
+    'yellow perch',
+  ]);
 });
 
 test('four approved prices and premium inheritance', () => {

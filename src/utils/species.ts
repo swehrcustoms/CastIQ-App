@@ -36,8 +36,10 @@ export function chipIdForSpecies(value: string): string | null {
   if (key.includes('walleye')) return 'walleye';
   if (key.includes('musk')) return 'muskie';
   if (key.includes('crappie')) return 'crappie';
+  if (key.includes('trout_perch')) return null;
   if (key.includes('perch')) return 'yellow_perch';
   if (key.includes('smallmouth') || key.includes('largemouth')) return 'largemouth_bass';
+  if (key.includes('white_bass') || key.includes('yellow_bass') || key.includes('rock_bass')) return 'panfish';
   if (key === 'bass') return 'largemouth_bass';
   if (key.includes('trout')) return 'lake_trout';
   if (key.includes('bluegill') || key.includes('sunfish') || key === 'panfish') return 'panfish';
@@ -51,4 +53,19 @@ export function chipsForLake(speciesPresent: string[] | undefined) {
     (speciesPresent ?? []).map(chipIdForSpecies).filter((id): id is string => id != null),
   );
   return SPECIES_OPTIONS.filter((option) => option.id === 'all' || present.has(option.id));
+}
+
+/** Species names for the lake header, in the same order as the filter chips. */
+export function speciesShownForLake(speciesPresent: string[] | undefined): string[] {
+  const grouped = new Map<string, string[]>();
+  for (const name of speciesPresent ?? []) {
+    const id = chipIdForSpecies(name);
+    if (!id) continue;
+    const names = grouped.get(id) ?? [];
+    if (!names.some((existing) => existing.toLowerCase() === name.toLowerCase())) names.push(name);
+    grouped.set(id, names);
+  }
+  return SPECIES_OPTIONS.filter((option) => option.id !== 'all' && grouped.has(option.id)).flatMap(
+    (option) => grouped.get(option.id) ?? [],
+  );
 }

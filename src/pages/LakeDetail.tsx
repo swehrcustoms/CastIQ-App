@@ -24,7 +24,9 @@ export function LakeDetail() {
   const tabParam = searchParams.get('tab');
   const activeTab: LakeTab = isLakeTab(tabParam) ? tabParam : 'overview';
   const [selectedSpecies, setSelectedSpecies] = useState('all');
-  const lakeChips = chipsForLake(lake?.speciesPresent);
+  const [dnrSpecies, setDnrSpecies] = useState<string[] | null>(null);
+  const speciesForPage = dnrSpecies ?? lake?.speciesPresent;
+  const lakeChips = chipsForLake(speciesForPage);
   const { reports, loading: reportsLoading, error: reportsError } = useLakeReports(lakeId);
   const visibleReports = selectedSpecies === 'all'
     ? reports
@@ -52,6 +54,23 @@ export function LakeDetail() {
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [lakeId]);
+
+  useEffect(() => {
+    if (!lakeId) return;
+    let cancelled = false;
+    setDnrSpecies(null);
+    fetchDnrLake(lakeId)
+      .then((fromDnr) => {
+        if (cancelled || !fromDnr || fromDnr.dnrLakeNumber !== lakeId) return;
+        if (fromDnr.speciesPresent.length > 0) setDnrSpecies(fromDnr.speciesPresent);
+      })
+      .catch(() => {
+        /* The saved lake list stays in place when DNR species cannot be loaded. */
       });
     return () => {
       cancelled = true;
@@ -114,7 +133,7 @@ export function LakeDetail() {
       <div>
         <div className="flex items-start justify-between gap-3 px-4 py-4">
           <div className="min-w-0 flex-1">
-            <LakeHeader lake={lake} />
+            <LakeHeader lake={{ ...lake, speciesPresent: speciesForPage ?? [] }} />
           </div>
         </div>
 
