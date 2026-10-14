@@ -3,6 +3,11 @@ import { consolidatedReports, reportNote } from '../../utils/reportIdentity';
 import { speciesLabel } from '../../utils/species';
 import { SourceAttribution } from '../shared/SourceAttribution';
 import { LoadingSpinner } from '../shared/LoadingSpinner';
+import { UpgradeCard } from '../subscription/UpgradeCard';
+import { useAuth } from '../../hooks/useAuth';
+import { subscriptionEnforcementEnabled } from '../../subscriptions/flags';
+import { currentAccessTier } from '../../subscriptions/membership';
+import { presentReport, type ReportLike } from '../../subscriptions/reportAccess';
 import type { AnglerReport } from '../../types/user';
 
 function Field({ label, value }: { label: string; value: string }) {
@@ -38,10 +43,77 @@ function recordedFields(report: AnglerReport, note: string | null): { label: str
   return fields;
 }
 
+function toReportLike(report: AnglerReport, note: string | null): ReportLike {
+  const reportDate = toDate(report.reportDate);
+  return {
+    reportId: report.reportId,
+    lakeId: report.lakeId,
+    species: report.species ?? [],
+    observedAt: reportDate ? reportDate.getTime() : null,
+    source: report.sourceId,
+    lures: report.lures ?? [],
+    colors: report.colors ?? [],
+    depthFt: report.depthFt,
+    waterTempF: report.waterTempF,
+    technique: report.technique ?? '',
+    timeOfDay: report.timeOfDay ?? '',
+    structureType: report.structureType,
+    conditions: report.conditions ?? '',
+    note,
+  };
+}
+
 function SpeciesReport({ species, report }: { species: string[]; report: AnglerReport }) {
+  const { user } = useAuth();
   const reportDate = toDate(report.reportDate);
   const note = reportNote(report);
   const fields = recordedFields(report, note);
+  const enforced = subscriptionEnforcementEnabled();
+  if (enforced) {
+    const view = presentReport({
+      report: toReportLike(report, note),
+      tier: currentAccessTier(null),
+      now: Date.now(),
+      authenticated: Boolean(user),
+      unlocks: [],
+    });
+    const title = species
+      .filter((name) => name !== 'unspecified')
+      .map((name) => speciesLabel(name))
+      .join(', ') || 'Species not listed';
+    return (
+      <article className="rounded-lg bg-castiq-blue p-4">
+        <h2 className="text-sm font-semibold text-castiq-white">{title}</h2>
+        <p className="mt-1 text-xs text-castiq-muted">
+          Latest report {formatRelative(reportDate)} · {formatTimestamp(reportDate)}
+          {view.olderThanWindow && view.detail === 'full' ? ' · Older than 30 days' : ''}
+        </p>
+        {view.detail === 'full' && view.paid ? (
+          <>
+            {view.paid.note && <p className="mt-3 text-sm text-castiq-white">{view.paid.note}</p>}
+            {fields.length > 0 && (
+              <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {fields.map((field) => (
+                  <Field key={field.label} label={field.label} value={field.value} />
+                ))}
+              </dl>
+            )}
+          </>
+        ) : (
+          <UpgradeCard
+            title={view.lock?.code === 'sign_in' ? 'Sign in to open the full report' : 'Full report detail is a Standard benefit'}
+            detail="Dates stay visible. Lures, depth, temperature, and structure stay hidden until an entitled unlock. The server ledger is not deployed, so this button does not spend a credit."
+          />
+        )}
+        <div className="mt-3">
+          <SourceAttribution
+            sourceName={report.sourceId ?? (report.userSubmitted ? 'Angler report' : 'Unknown')}
+            type={report.userSubmitted ? 'user' : 'RSS'}
+          />
+        </div>
+      </article>
+    );
+  }
   const title = species
     .filter((name) => name !== 'unspecified')
     .map((name) => speciesLabel(name))

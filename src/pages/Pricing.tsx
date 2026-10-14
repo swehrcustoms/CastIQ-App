@@ -8,6 +8,7 @@ import {
   PRICING_DISCLAIMER,
   PRICING_HERO,
   annualPricePerMonth,
+  annualSavings,
   monthlyYearTotal,
   priceFor,
   type BillingInterval,
@@ -39,7 +40,21 @@ export function Pricing() {
         ))}
       </div>
 
-      <ul className="grid gap-4 lg:grid-cols-2">
+      <ul className="grid gap-4 lg:grid-cols-3">
+        <li>
+          <AppCard className="flex h-full flex-col">
+            <h2 className="text-lg font-semibold text-castiq-white">Free</h2>
+            <p className="mt-1 text-2xl font-bold text-castiq-teal">$0</p>
+            <p className="mt-2 text-sm text-castiq-muted">Search lakes, read public report dates, and open ice safety guidance.</p>
+            <ul className="mt-3 flex-1 list-disc space-y-2 pl-5 text-sm text-castiq-white">
+              <li>Lake and species search</li>
+              <li>Dated public report previews</li>
+              <li>Ice safety guidance and official source links</li>
+            </ul>
+            <p className="mt-4 text-sm font-medium text-castiq-white">No renewal</p>
+            <p className="mt-5 text-sm text-castiq-muted">Included while billing is closed. Proposed full-report limits are off.</p>
+          </AppCard>
+        </li>
         {PLANS.map((plan) => {
           const monthly = priceFor(plan.tier, 'monthly');
           const annual = priceFor(plan.tier, 'annual');
@@ -58,7 +73,9 @@ export function Pricing() {
                       {monthly.display}
                     </p>
                     <p className="text-2xl font-bold text-castiq-white">{annualPerMonth.display}</p>
-                    <p className="text-xs text-castiq-muted">Annual plan broken down by month.</p>
+                    <p className="text-xs text-castiq-muted">
+                      Annual plan broken down by month. Save {annualSavings(plan.tier).display} versus 12 monthly payments.
+                    </p>
                   </div>
                 )}
                 <p className="mt-2 text-sm text-castiq-muted">{plan.subtitle}</p>
@@ -93,6 +110,32 @@ export function Pricing() {
       </ul>
 
       {notice && <p className="mt-4 text-sm text-castiq-muted" role="status">{notice}</p>}
+      <section className="mt-8" aria-labelledby="plan-access">
+        <h2 id="plan-access" className="text-sm font-semibold text-castiq-white">What each plan can open</h2>
+        <p className="mt-1 text-xs text-castiq-muted">
+          Monthly and annual copies of a plan open the same features. The number limits below are proposed and are not turned on.
+        </p>
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full min-w-[36rem] text-left text-sm text-castiq-white">
+            <thead>
+              <tr className="text-xs text-castiq-muted">
+                <th className="py-2 pr-3 font-medium">Access</th>
+                <th className="py-2 pr-3 font-medium">Free</th>
+                <th className="py-2 pr-3 font-medium">Standard</th>
+                <th className="py-2 font-medium">Premium</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-t border-white/10"><td className="py-2 pr-3">Lake search</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+              <tr className="border-t border-white/10"><td className="py-2 pr-3">Report dates and sources</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+              <tr className="border-t border-white/10"><td className="py-2 pr-3">Full report detail</td><td>Proposed: 3 / 30 days</td><td>Eligible reports</td><td>Retained reports</td></tr>
+              <tr className="border-t border-white/10"><td className="py-2 pr-3">Saved lakes</td><td>Proposed: 2</td><td>Proposed: 10</td><td>Unlimited</td></tr>
+              <tr className="border-t border-white/10"><td className="py-2 pr-3">Ice safety</td><td>Always</td><td>Always</td><td>Always</td></tr>
+              <tr className="border-t border-white/10"><td className="py-2 pr-3">Compare lakes and trends</td><td>No</td><td>No</td><td>When the data supports it</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
       <p className="mt-6 text-xs text-castiq-muted">{PRICING_DISCLAIMER}</p>
     </PageContainer>
   );

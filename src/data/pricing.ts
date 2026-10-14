@@ -104,6 +104,13 @@ export function monthlyYearTotal(tier: PlanTier): { cents: number; display: stri
   return { cents, display: `$${(cents / 100).toFixed(2)}` };
 }
 
+/** Difference between 12 monthly bills and the annual charge. Not a separate discount code. */
+export function annualSavings(tier: PlanTier): { cents: number; display: string; percent: number } {
+  const cents = monthlyYearTotal(tier).cents - priceFor(tier, 'annual').cents;
+  const percent = Math.round((cents / monthlyYearTotal(tier).cents) * 100);
+  return { cents, display: `$${(cents / 100).toFixed(2)}`, percent };
+}
+
 export function tierHasEntitlement(tier: PlanTier, key: EntitlementKey): boolean {
   return ENTITLEMENTS[key][tier];
 }

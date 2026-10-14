@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { setFavoriteLake } from '../../services/userProfile';
+import { canSaveLake } from '../../subscriptions/entitlements';
+import { subscriptionEnforcementEnabled } from '../../subscriptions/flags';
+import { currentAccessTier } from '../../subscriptions/membership';
+import { UpgradeCard } from '../subscription/UpgradeCard';
 
 export function FavoriteButton({ lakeId }: { lakeId: string }) {
   const { user, profile } = useAuth();
@@ -10,6 +14,13 @@ export function FavoriteButton({ lakeId }: { lakeId: string }) {
 
   async function toggle() {
     if (!user) return;
+    if (subscriptionEnforcementEnabled() && !saved) {
+      const decision = canSaveLake(currentAccessTier(null), profile?.favoriteLakeIds.length ?? 0, false);
+      if (!decision.ok) {
+        setError(`The ${currentAccessTier(null)} plan can save ${decision.cap} lakes. Remove one before saving another.`);
+        return;
+      }
+    }
     setBusy(true);
     setError(null);
     try {
@@ -33,7 +44,10 @@ export function FavoriteButton({ lakeId }: { lakeId: string }) {
       >
         {saved ? 'Unfavorite' : 'Favorite'}
       </button>
-      {error && <p className="text-xs text-castiq-red">{error}</p>}
+      {error && <p className="max-w-xs text-right text-xs text-castiq-red">{error}</p>}
+      {subscriptionEnforcementEnabled() && error && (
+        <UpgradeCard title="Saved lakes" detail="Existing saves stay on the account. New saves wait until the list is under the plan cap." />
+      )}
     </div>
   );
 }

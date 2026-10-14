@@ -64,6 +64,8 @@ export function Profile() {
           <div className="min-w-0 flex-1">
             <NameEditor current={name} />
             <p className="mt-2 text-sm text-castiq-muted">{user.email}</p>
+            <p className="mt-1 text-sm text-castiq-white">Current plan: Free</p>
+            <p className="text-xs text-castiq-muted">CastIQ is not charging. Report detail and saved lakes are not limited until enforcement is approved.</p>
           </div>
         </section>
 

@@ -170,5 +170,22 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow write: if isAdmin();
     }
+
+    // Membership and unlocks are written only by a future Cloud Function (Admin SDK).
+    // These rules are not deployed with this branch.
+    match /users/{userId}/membership/{docId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if false;
+    }
+
+    match /users/{userId}/report_unlocks/{reportId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if false;
+    }
+
+    match /users/{userId}/alert_deliveries/{deliveryId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if false;
+    }
   }
 }
