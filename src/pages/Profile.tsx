@@ -212,10 +212,12 @@ function Alerts({ prefs, uid }: { prefs: CastIQUser['alertPreferences'] | undefi
             ))}
           </div>
         </div>
+        <p className="text-xs text-castiq-muted">Coming soon. CastIQ does not send alert notifications yet.</p>
         <Toggle
-          label="Recent report alerts"
-          checked={current.reportRecency}
-          onChange={(checked) => void update({ ...current, reportRecency: checked })}
+          label="Report freshness — Coming soon"
+          checked={false}
+          disabled
+          onChange={() => undefined}
         />
         <Toggle
           label="Winterkill alerts"
@@ -233,7 +235,7 @@ function Alerts({ prefs, uid }: { prefs: CastIQUser['alertPreferences'] | undefi
   );
 }
 
-function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
+function Toggle({ label, checked, onChange, disabled = false }: { label: string; checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean }) {
   return (
     <label className="flex items-center justify-between gap-4 text-sm text-castiq-white">
       {label}
@@ -241,6 +243,7 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
         type="checkbox"
         className="h-4 w-4 accent-castiq-teal"
         checked={checked}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.checked)}
       />
     </label>

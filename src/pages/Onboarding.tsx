@@ -153,9 +153,10 @@ export function Onboarding() {
 
         {step === 3 && (
           <>
-            <h1 className="text-2xl font-bold text-castiq-white">Which alerts should we keep?</h1>
+            <h1 className="text-2xl font-bold text-castiq-white">Which alerts would you like?</h1>
+            <p className="mt-2 text-sm text-castiq-muted">CastIQ does not send these alerts yet. Preferences are saved for a later release.</p>
             <div className="mt-4 space-y-3">
-              <AlertRow label="Report freshness" checked={alerts.reportRecency} onChange={(checked) => setAlerts((current) => ({ ...current, reportRecency: checked }))} />
+              <AlertRow label="Report freshness — Coming soon" checked={false} disabled onChange={() => undefined} />
               <AlertRow label="Winterkill" checked={alerts.winterkillAlerts} onChange={(checked) => setAlerts((current) => ({ ...current, winterkillAlerts: checked }))} />
               <AlertRow label="Ice reports" checked={alerts.iceReports} onChange={(checked) => setAlerts((current) => ({ ...current, iceReports: checked }))} />
             </div>
@@ -206,11 +207,11 @@ export function Onboarding() {
   );
 }
 
-function AlertRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
+function AlertRow({ label, checked, onChange, disabled = false }: { label: string; checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean }) {
   return (
     <label className="ciq-card flex items-center justify-between px-4 py-3 text-sm text-castiq-white">
       {label}
-      <input type="checkbox" className="h-4 w-4 accent-castiq-teal" checked={checked} onChange={(event) => onChange(event.target.checked)} />
+      <input type="checkbox" className="h-4 w-4 accent-castiq-teal" checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} />
     </label>
   );
 }

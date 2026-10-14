@@ -3,6 +3,7 @@ import { query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { Collections } from '../services/firestore';
 import { compactName, nameScore, searchDnrLakes } from '../services/dnrLakeSearch';
 import { canonicalSpecies, speciesMatches } from '../utils/species';
+import { compareLakesByLatestReport } from '../utils/lakeSort';
 import type { Lake } from '../types/lake';
 import type { WithId } from '../types/common';
 
@@ -13,8 +14,10 @@ export interface LakeSearchFilters {
   reportType?: 'angler' | 'dnr' | 'both';
 }
 
+export type RankedLake = WithId<Lake> & { matchScore?: number };
+
 export interface UseLakeSearchResult {
-  results: WithId<Lake>[];
+  results: RankedLake[];
   loading: boolean;
   error: Error | null;
   approximate: boolean;
@@ -112,11 +115,11 @@ export function useLakeSearch(
 
         const ranked = catalog
           .filter((item) => matchesSpecies(item.lake, filters.species) && matchesJurisdiction(item.lake, filters.jurisdiction))
-          .sort((a, b) => a.score - b.score || (b.lake.acreage ?? 0) - (a.lake.acreage ?? 0))
+          .sort((a, b) => a.score - b.score || compareLakesByLatestReport(a.lake, b.lake))
           .slice(0, maxResults);
 
         if (cancelled) return;
-        setResults(ranked.map((item) => item.lake));
+        setResults(ranked.map((item) => ({ ...item.lake, matchScore: item.score })));
         setApproximate(ranked.length > 0 && ranked[0].score > 0);
         if (catalog.length > 0 || ranked.length > 0) setError(null);
       } catch (err) {

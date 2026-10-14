@@ -1,11 +1,10 @@
-import { PublicShell } from '../components/layout/PublicShell';
 import { PageContainer, PageHeader, SourceFooter } from '../components/ui/Chrome';
 import { usePageTitle } from '../hooks/usePageTitle';
 
 export function Terms() {
   usePageTitle('Terms');
   return (
-    <PublicShell>
+    <>
       {/* Legal review required before this copy is treated as binding. */}
       <PageContainer className="max-w-3xl">
         <PageHeader
@@ -49,6 +48,6 @@ export function Terms() {
           <SourceFooter>This page is a product draft and still needs legal review.</SourceFooter>
         </div>
       </PageContainer>
-    </PublicShell>
+    </>
   );
 }

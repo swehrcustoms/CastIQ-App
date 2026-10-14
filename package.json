@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "typecheck": "tsc --noEmit",
+    "test": "tsx tests/mvpLaunch.test.ts",
     "seed:lakes": "tsx scripts/seedLakes.ts",
     "seed:species": "tsx scripts/seedSpecies.ts",
     "seed:regulations": "tsx scripts/seedRegulations.ts",

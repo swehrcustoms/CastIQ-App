@@ -1,13 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { IconClose, IconIce, IconMap, IconMore, IconSearch, IconUsers } from '../ui/Icons';
+import { IconClose, IconIce, IconMore, IconSearch } from '../ui/Icons';
 
 const PRIMARY = [
-  { to: '/', label: 'Map', icon: IconMap, end: true },
   { to: '/search', label: 'Search', icon: IconSearch, end: false },
   { to: '/ice', label: 'Ice', icon: IconIce, end: false },
-  { to: '/social', label: 'Social', icon: IconUsers, end: false },
 ];
 
 export function AppNav() {
@@ -17,10 +15,6 @@ export function AppNav() {
   useEffect(() => {
     setOpen(false);
   }, [location.pathname]);
-
-  if (location.pathname.startsWith('/lake/') || location.pathname === '/onboarding') {
-    return null;
-  }
 
   return (
     <>
@@ -75,15 +69,15 @@ function MoreDialog({ onClose }: { onClose: () => void }) {
   }, []);
 
   const links = [
-    { to: '/regulations', label: 'Regulations', detail: 'Limits, seasons, and alerts' },
-    { to: '/border-waters', label: 'Border waters', detail: 'Rules that change by jurisdiction' },
-    { to: '/submit-report', label: 'Share a report', detail: 'Tell other anglers what you saw' },
-    { to: '/guides', label: 'Guides', detail: 'Local expertise and resorts' },
-    { to: '/pricing', label: 'Pricing', detail: 'What CastIQ includes' },
-    { to: '/profile', label: 'Profile', detail: 'Favorites, alerts, and your reports' },
+    { to: '/about', label: 'About', detail: 'What CastIQ is' },
+    { to: '/pricing', label: 'Pricing', detail: 'Standard and Premium' },
+    { to: '/tactics', label: 'Tactics', detail: 'Seasonal bait suggestions' },
   ];
+  if (profile) {
+    links.push({ to: '/profile', label: 'Profile', detail: 'Favorites and your reports' });
+  }
   if (profile?.guidePortalAccess || profile?.role === 'guide' || profile?.role === 'admin') {
-    links.splice(5, 0, { to: '/guide', label: 'Guide portal', detail: 'Assigned waters and tools' });
+    links.push({ to: '/guide', label: 'Guide portal', detail: 'Assigned waters and tools' });
   }
 
   return (

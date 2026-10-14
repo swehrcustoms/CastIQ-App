@@ -17,6 +17,7 @@ import { Social } from './pages/Social';
 import { Onboarding } from './pages/Onboarding';
 import { Pricing } from './pages/Pricing';
 import { Guides } from './pages/Guides';
+import { About } from './pages/About';
 import { Terms } from './pages/Terms';
 import { Privacy } from './pages/Privacy';
 import { NotFound } from './pages/NotFound';
@@ -35,20 +36,26 @@ function OnboardingGate({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-function AuthenticatedShell() {
+function SiteShell() {
   const location = useLocation();
-  const showNav = !location.pathname.startsWith('/lake/') && location.pathname !== '/onboarding';
+  const hideNav = location.pathname === '/onboarding';
 
+  return (
+    <div className="flex min-h-dvh flex-col bg-castiq-blue-dark">
+      <AppHeader />
+      <main className={hideNav ? 'flex-1' : 'flex-1 pb-20 md:pb-8'}>
+        <Outlet />
+      </main>
+      {!hideNav && <AppNav />}
+    </div>
+  );
+}
+
+function AuthenticatedShell() {
   return (
     <ProtectedRoute>
       <OnboardingGate>
-        <div className="flex min-h-dvh flex-col bg-castiq-blue-dark">
-          <AppHeader />
-          <main className={showNav ? 'flex-1 pb-20 md:pb-8' : 'flex-1'}>
-            <Outlet />
-          </main>
-          <AppNav />
-        </div>
+        <SiteShell />
       </OnboardingGate>
     </ProtectedRoute>
   );
@@ -60,10 +67,14 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/sign-in" element={<Navigate to="/login" replace />} />
-        <Route path="/pricing" element={<Pricing />} />
-        <Route path="/guides" element={<Guides />} />
-        <Route path="/legal/terms" element={<Terms />} />
-        <Route path="/legal/privacy" element={<Privacy />} />
+        <Route element={<SiteShell />}>
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/tactics" element={<Guides />} />
+          <Route path="/guides" element={<Navigate to="/tactics" replace />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/legal/terms" element={<Terms />} />
+          <Route path="/legal/privacy" element={<Privacy />} />
+        </Route>
 
         <Route element={<AuthenticatedShell />}>
           <Route path="/" element={<MapHome />} />

@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { PublicShell } from '../components/layout/PublicShell';
 import { PageContainer, PageHeader } from '../components/ui/Chrome';
 import { AppCard, FilterChip } from '../components/ui/Data';
 import { EmptyState } from '../components/ui/States';
@@ -92,7 +91,7 @@ export function Guides() {
   const [species, setSpecies] = useState('all');
   const [area, setArea] = useState<AreaId>('all');
   const season = guideSeason();
-  usePageTitle('Guides');
+  usePageTitle('Tactics');
 
   const featured = useLakeSearch('', {}, 20);
   const searched = useLakeSearch(query, {}, 12);
@@ -115,12 +114,12 @@ export function Guides() {
   const loading = query.trim() ? searched.loading || featured.loading : featured.loading;
 
   return (
-    <PublicShell>
+    <>
       <PageContainer>
         <PageHeader
-          eyebrow="Guides"
+          eyebrow="Tactics"
           title="Bait suggestions for Minnesota lakes"
-          subtitle={`The top lakes are listed first, the same waters as Search. Each one includes a ${seasonLabel(season).toLowerCase()} bait list for the species on that water. Search a lake, county, or town to load that area.`}
+          subtitle={`Seasonal tackle notes, not a guide booking service. The top lakes are listed first. Each one includes a ${seasonLabel(season).toLowerCase()} bait list for the species on that water.`}
         />
 
         <label>
@@ -174,6 +173,6 @@ export function Guides() {
           )}
         </div>
       </PageContainer>
-    </PublicShell>
+    </>
   );
 }

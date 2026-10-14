@@ -2,12 +2,8 @@ import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
 const LINKS = [
-  { to: '/', label: 'Map', end: true },
   { to: '/search', label: 'Search', end: false },
   { to: '/ice', label: 'Ice', end: false },
-  { to: '/social', label: 'Social', end: false },
-  { to: '/regulations', label: 'Regulations', end: false },
-  { to: '/border-waters', label: 'Border', end: false },
 ];
 
 export function AppHeader() {
@@ -15,9 +11,7 @@ export function AppHeader() {
   const location = useLocation();
   const focused = location.pathname === '/onboarding';
 
-  if (!user) return null;
-
-  const label = profile?.displayName || user.displayName || user.email || 'Angler';
+  const label = profile?.displayName || user?.displayName || user?.email || 'Angler';
   const initial = label.charAt(0).toUpperCase();
 
   return (
@@ -36,8 +30,8 @@ export function AppHeader() {
                 end={item.end}
                 className={({ isActive }) =>
                   `rounded-lg px-2.5 py-1.5 text-xs font-medium ${
-                    item.to === '/border-waters' ? 'hidden xl:inline' : ''
-                  } ${isActive ? 'bg-castiq-teal/15 text-castiq-teal' : 'text-castiq-muted hover:text-castiq-white'}`
+                    isActive ? 'bg-castiq-teal/15 text-castiq-teal' : 'text-castiq-muted hover:text-castiq-white'
+                  }`
                 }
               >
                 {item.label}
@@ -48,9 +42,8 @@ export function AppHeader() {
                 More
               </summary>
               <div className="absolute right-0 z-50 mt-2 w-48 rounded-xl border border-white/10 bg-castiq-blue p-1 shadow-lg">
-                <HeaderLink to="/border-waters" label="Border waters" className="xl:hidden" />
-                <HeaderLink to="/submit-report" label="Share a report" />
-                <HeaderLink to="/guides" label="Guides" />
+                <HeaderLink to="/about" label="About" />
+                <HeaderLink to="/tactics" label="Tactics" />
                 <HeaderLink to="/pricing" label="Pricing" />
                 {(profile?.guidePortalAccess || profile?.role === 'guide' || profile?.role === 'admin') && (
                   <HeaderLink to="/guide" label="Guide portal" />
@@ -61,11 +54,7 @@ export function AppHeader() {
         )}
 
         <div className="ml-auto flex items-center gap-3">
-          {!focused && (
-            <Link to="/submit-report" className="hidden text-xs font-medium text-castiq-teal sm:inline hover:underline">
-              Share a report
-            </Link>
-          )}
+          {user ? (
           <Link to="/profile" className="flex items-center gap-2 rounded-full" aria-label="Open profile">
             {user.photoURL ? (
               <img src={user.photoURL} alt="" className="h-8 w-8 rounded-full object-cover ring-1 ring-castiq-teal/40" />
@@ -78,6 +67,11 @@ export function AppHeader() {
               {label}
             </span>
           </Link>
+          ) : (
+            <Link to="/login" className="text-xs font-medium text-castiq-teal hover:underline">
+              Sign in
+            </Link>
+          )}
         </div>
       </div>
     </header>

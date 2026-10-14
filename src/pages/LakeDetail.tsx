@@ -4,18 +4,19 @@ import { doc, getDoc } from 'firebase/firestore';
 import { fetchDnrLake } from '../services/dnrLakeSearch';
 import { db } from '../services/firebase';
 import { LakeHeader } from '../components/lake/LakeHeader';
+import { LakeOverview } from '../components/lake/LakeOverview';
 import { LakeTabNav } from '../components/lake/LakeTabNav';
 import { ReportFeed } from '../components/lake/ReportFeed';
 import { LakeHealthSnapshot } from '../components/lake/LakeHealthSnapshot';
-import { LurePanel } from '../components/ai/LurePanel';
 import { WeatherStrip } from '../components/shared/WeatherStrip';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { SpeciesChips } from '../components/shared/SpeciesChips';
 import { FavoriteButton } from '../components/lake/FavoriteButton';
 import { SurveysStockingPanel } from '../components/lake/SurveysStockingPanel';
 import { WaterQualityPanel } from '../components/lake/WaterQualityPanel';
-import { RegulationsSummary } from '../components/lake/RegulationsSummary';
 import { useWeather } from '../hooks/useWeather';
+import { useLakeReports } from '../hooks/useLakeReports';
+import { speciesMatches } from '../utils/species';
 import { isLakeTab, type LakeTab } from '../components/lake/LakeTabNav';
 import type { Lake } from '../types/lake';
 import type { WithId } from '../types/common';
@@ -31,6 +32,10 @@ export function LakeDetail() {
   const activeTab: LakeTab = isLakeTab(tabParam) ? tabParam : 'overview';
   const [selectedSpecies, setSelectedSpecies] = useState('all');
   const { weather, loading: weatherLoading, refetch: refetchWeather } = useWeather();
+  const { reports, loading: reportsLoading, error: reportsError } = useLakeReports(lakeId);
+  const visibleReports = selectedSpecies === 'all'
+    ? reports
+    : reports.filter((report) => (report.species ?? []).some((species) => speciesMatches(species, selectedSpecies)));
 
   useEffect(() => {
     if (!lakeId) return;
@@ -114,17 +119,8 @@ export function LakeDetail() {
         </button>
         <span className="text-castiq-muted">/</span>
         <span className="text-sm text-castiq-muted truncate">{lake.name}</span>
-
-        {/* Live intelligence link */}
-        <Link
-          to={`/lake/${lakeId}/live`}
-          className="ml-auto shrink-0 rounded-lg bg-castiq-teal/20 px-3 py-1.5 text-xs font-medium text-castiq-teal hover:bg-castiq-teal/30"
-        >
-          Live Intel
-        </Link>
       </div>
 
-      {/* Scrollable content */}
       <div>
         <div className="flex items-start justify-between gap-3 px-4 py-4">
           <div className="min-w-0 flex-1">
@@ -132,60 +128,64 @@ export function LakeDetail() {
           </div>
           <FavoriteButton lakeId={lake.id} />
         </div>
-        <div className="flex gap-2 overflow-x-auto px-4 pb-4 scrollbar-hide">
-          <Link to={`/lake/${lakeId}/live`} className="ciq-btn-secondary shrink-0">Live Intelligence</Link>
-          <Link to={`/lake/${lakeId}/fisheries`} className="ciq-btn-secondary shrink-0">Fisheries</Link>
-          <Link to={`/lake/${lakeId}/contours`} className="ciq-btn-secondary shrink-0">Contours</Link>
-          <button type="button" className="ciq-btn-secondary shrink-0" onClick={() => selectTab('regulations')}>Regulations</button>
-          <Link to="/submit-report" className="ciq-btn-secondary shrink-0">Submit Report</Link>
-        </div>
 
-        {/* Weather strip */}
         <div className="px-4 pb-4">
           <WeatherStrip weather={weather} loading={weatherLoading} />
         </div>
 
-        {/* Tab navigation */}
         <div className="px-4">
           <LakeTabNav
             active={activeTab}
             onSelect={selectTab}
-            reportCount={lake.reportCount7d}
+            reportCount={reports.length}
           />
         </div>
 
-        {/* Tab content */}
         <div className="px-4 py-4">
           {activeTab === 'overview' && (
             <div className="grid gap-4 lg:grid-cols-3">
-              {/* Main column: report feed */}
               <div className="lg:col-span-2 space-y-4">
                 <SpeciesChips selected={selectedSpecies} onChange={setSelectedSpecies} />
-                <ReportFeed lakeId={lake.id} filterSpecies={selectedSpecies} />
+                <LakeOverview
+                  lake={lake}
+                  species={selectedSpecies}
+                  report={visibleReports[0] ?? null}
+                  loading={reportsLoading}
+                />
               </div>
-
-              {/* Sidebar: AI + health */}
-              <div className="space-y-4">
-                <LurePanel lake={lake} targetSpecies={selectedSpecies === 'all' ? 'walleye' : selectedSpecies} />
-                <LakeHealthSnapshot lake={lake} />
-              </div>
+              <LakeHealthSnapshot lake={lake} />
             </div>
           )}
-
-          {activeTab === 'surveys' && <SurveysStockingPanel lakeId={lake.id} />}
-
-          {activeTab === 'regulations' && (
-            <RegulationsSummary lakeId={lake.id} lakeName={lake.name} />
-          )}
-
-          {activeTab === 'water' && <WaterQualityPanel lakeId={lake.id} />}
 
           {activeTab === 'reports' && (
             <div className="space-y-4">
               <SpeciesChips selected={selectedSpecies} onChange={setSelectedSpecies} />
-              <ReportFeed lakeId={lake.id} filterSpecies={selectedSpecies} />
+              <ReportFeed reports={visibleReports} loading={reportsLoading} error={reportsError} />
             </div>
           )}
+
+          {activeTab === 'surveys' && (
+            <div className="space-y-3">
+              <p className="text-xs text-castiq-muted">
+                Agency survey and stocking records are historical. They are not a current bite report.
+              </p>
+              <SurveysStockingPanel lakeId={lake.id} />
+            </div>
+          )}
+
+          {activeTab === 'ice' && (
+            <div className="rounded-lg bg-castiq-blue p-4 space-y-3">
+              <h2 className="text-sm font-semibold text-castiq-white">Ice</h2>
+              <p className="text-sm text-castiq-muted">
+                Ice conditions are highly variable. A report describes one place at one time, and no report guarantees safe ice.
+              </p>
+              <Link to="/ice" className="inline-block text-sm text-castiq-teal hover:underline">
+                Open Minnesota ice reports
+              </Link>
+            </div>
+          )}
+
+          {activeTab === 'water' && <WaterQualityPanel lakeId={lake.id} />}
         </div>
       </div>
     </div>

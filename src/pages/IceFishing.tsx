@@ -92,7 +92,7 @@ export function IceFishing() {
 
       <div className="mb-5">
         <AlertBanner tone="warning">
-          Reported ice thickness is informational only. Ice conditions vary across a lake and can change rapidly. Verify conditions locally before travel.
+          Reported ice thickness is informational only. Ice conditions vary across a lake and can change rapidly. No report guarantees safe ice. Verify conditions locally before travel.
         </AlertBanner>
       </div>
 

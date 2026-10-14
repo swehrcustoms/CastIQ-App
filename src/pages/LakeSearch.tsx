@@ -6,14 +6,12 @@ import { SearchResultCard } from '../components/search/SearchResultCard';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { useLakeSearch } from '../hooks/useLakeSearch';
 import type { LakeSearchFilters } from '../hooks/useLakeSearch';
-
-type SortKey = 'recent' | 'nearest' | 'reports';
+import { compareLakesByLatestReport } from '../utils/lakeSort';
 
 export function LakeSearch() {
   const [params, setParams] = useSearchParams();
   const [query, setQuery] = useState(params.get('q') ?? '');
   const [filters, setFilters] = useState<LakeSearchFilters>({});
-  const [sortKey] = useState<SortKey>('recent');
   const [showFilters, setShowFilters] = useState(false);
 
   const { results, loading, approximate } = useLakeSearch(query, filters);
@@ -27,18 +25,13 @@ export function LakeSearch() {
     }
   }, [query, setParams]);
 
-  const sorted = query
-    ? results
-    : [...results].sort((a, b) => {
-        if (sortKey === 'reports') return (b.reportCount7d ?? 0) - (a.reportCount7d ?? 0);
-        const aDate = a.lastReportDate
-          ? (a.lastReportDate as unknown as { toDate?: () => Date }).toDate?.()?.getTime() ?? 0
-          : 0;
-        const bDate = b.lastReportDate
-          ? (b.lastReportDate as unknown as { toDate?: () => Date }).toDate?.()?.getTime() ?? 0
-          : 0;
-        return bDate - aDate;
-      });
+  const sorted = [...results].sort((a, b) => {
+    if (query) {
+      const score = (a.matchScore ?? 99) - (b.matchScore ?? 99);
+      if (score !== 0) return score;
+    }
+    return compareLakesByLatestReport(a, b);
+  });
 
   return (
     <div className="flex h-[calc(100dvh-8rem)] flex-col bg-castiq-blue-dark">

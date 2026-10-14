@@ -1,9 +1,9 @@
 const TABS = [
   { id: 'overview', label: 'Overview' },
-  { id: 'surveys', label: 'Surveys & Stocking' },
-  { id: 'regulations', label: 'Regulations' },
-  { id: 'water', label: 'Water Quality' },
   { id: 'reports', label: 'Reports' },
+  { id: 'surveys', label: 'Surveys & Stocking' },
+  { id: 'ice', label: 'Ice' },
+  { id: 'water', label: 'Water Quality' },
 ] as const;
 
 export type LakeTab = (typeof TABS)[number]['id'];

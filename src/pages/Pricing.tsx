@@ -1,89 +1,80 @@
-import { Link } from 'react-router-dom';
-import { PublicShell } from '../components/layout/PublicShell';
-import { PageContainer, PageHeader, SourceFooter } from '../components/ui/Chrome';
+import { useState } from 'react';
+import { PageContainer, PageHeader } from '../components/ui/Chrome';
 import { AppCard } from '../components/ui/Data';
-import { AlertBanner } from '../components/ui/States';
-import { useAuth } from '../hooks/useAuth';
 import { usePageTitle } from '../hooks/usePageTitle';
-
-const PLANS = [
-  {
-    name: 'Angler',
-    summary: 'The fishing intelligence CastIQ is built around.',
-    items: [
-      'Lake map and search',
-      'Live intelligence when it is available',
-      'Fisheries, contours, water quality, and regulations',
-      'Ice reports and border-water comparisons',
-      'Public community reports',
-    ],
-    cta: 'Use CastIQ',
-    to: '/',
-  },
-  {
-    name: 'Guide',
-    summary: 'Portal tools for accounts that have been granted guide access.',
-    items: [
-      'Assigned lakes',
-      'Recent reports for those waters',
-      'Guide portal',
-    ],
-    cta: 'Open Guide Portal',
-    to: '/guide',
-  },
-  {
-    name: 'Guide Pro',
-    summary: 'The same portal, with API access when it has been enabled on the account.',
-    items: [
-      'Everything in Guide',
-      'API key management inside the portal',
-    ],
-    cta: 'Open Guide Portal',
-    to: '/guide',
-  },
-];
+import {
+  LIVE_CHECKOUT_ENABLED,
+  PLANS,
+  PRICING_DISCLAIMER,
+  PRICING_HERO,
+  priceFor,
+  type BillingInterval,
+} from '../data/pricing';
 
 export function Pricing() {
-  const { user } = useAuth();
   usePageTitle('Pricing');
+  const [interval, setInterval] = useState<BillingInterval>('monthly');
+  const [notice, setNotice] = useState<string | null>(null);
 
   return (
-    <PublicShell>
-      <PageContainer>
-        <PageHeader
-          eyebrow="Plans"
-          title="CastIQ access"
-          subtitle="Less time scrolling. More time fishing. Billing is not offered in the app."
-        />
-        <div className="mb-5">
-          <AlertBanner>
-            CastIQ does not take payment here. Guide tools appear only on accounts that have already been granted access.
-          </AlertBanner>
-        </div>
-        <ul className="grid gap-4 lg:grid-cols-3">
-          {PLANS.map((plan) => (
-            <li key={plan.name}>
-              <AppCard className="flex h-full flex-col">
+    <PageContainer>
+      <PageHeader eyebrow="Plans" title={PRICING_HERO.title} subtitle={PRICING_HERO.description} />
+
+      <div className="mb-5 flex flex-wrap items-center gap-2" role="radiogroup" aria-label="Billing interval">
+        {(['monthly', 'annual'] as const).map((option) => (
+          <button
+            key={option}
+            type="button"
+            role="radio"
+            aria-checked={interval === option}
+            onClick={() => setInterval(option)}
+            className={`min-h-11 rounded-full px-4 py-2 text-sm font-medium ${
+              interval === option ? 'bg-castiq-teal text-castiq-blue-dark' : 'bg-castiq-blue text-castiq-white'
+            }`}
+          >
+            {option === 'monthly' ? 'Monthly' : 'Annual'}
+          </button>
+        ))}
+      </div>
+
+      <ul className="grid gap-4 lg:grid-cols-2">
+        {PLANS.map((plan) => {
+          const price = priceFor(plan.tier, interval);
+          return (
+            <li key={plan.tier}>
+              <AppCard className={`flex h-full flex-col ${plan.tier === 'premium' ? 'ring-1 ring-castiq-teal' : ''}`}>
                 <h2 className="text-lg font-semibold text-castiq-white">{plan.name}</h2>
-                <p className="mt-2 text-sm text-castiq-muted">{plan.summary}</p>
-                <ul className="mt-4 flex-1 space-y-2 text-sm text-castiq-white">
-                  {plan.items.map((item) => (
+                <p className="mt-1 text-2xl font-bold text-castiq-teal">{price.display}</p>
+                <p className="mt-2 text-sm text-castiq-muted">{plan.subtitle}</p>
+                {'inherits' in plan && plan.inherits && (
+                  <p className="mt-4 text-sm font-medium text-castiq-white">{plan.inherits}</p>
+                )}
+                <ul className="mt-3 flex-1 space-y-2 text-sm text-castiq-white">
+                  {plan.bullets.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
-                <Link to={user || plan.to === '/guide' ? plan.to : '/login'} className="ciq-btn-primary mt-5">
-                  {user || plan.to === '/guide' ? plan.cta : 'Sign in'}
-                </Link>
+                <button
+                  type="button"
+                  className="ciq-btn-primary mt-5"
+                  onClick={() =>
+                    setNotice(
+                      LIVE_CHECKOUT_ENABLED
+                        ? 'Checkout is open.'
+                        : 'Coming soon. CastIQ is not charging for Standard or Premium yet.',
+                    )
+                  }
+                >
+                  {LIVE_CHECKOUT_ENABLED ? `Continue with ${plan.name}` : 'Coming soon'}
+                </button>
               </AppCard>
             </li>
-          ))}
-        </ul>
-        <div className="mt-6">
-          <SourceFooter>
-            Prices are not listed because checkout is not part of this application. Access shown above matches features that already exist.
-          </SourceFooter>
-        </div>
-      </PageContainer>
-    </PublicShell>
+          );
+        })}
+      </ul>
+
+      {notice && <p className="mt-4 text-sm text-castiq-muted" role="status">{notice}</p>}
+      <p className="mt-6 text-xs text-castiq-muted">{PRICING_DISCLAIMER}</p>
+    </PageContainer>
   );
 }

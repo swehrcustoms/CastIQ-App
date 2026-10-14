@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react';
-import { getDocs, limit, orderBy, query, where } from 'firebase/firestore';
-import { Collections } from '../../services/firestore';
+import { useState } from 'react';
 import { SourceAttribution } from '../shared/SourceAttribution';
 import { LoadingSpinner } from '../shared/LoadingSpinner';
 import { formatReportAge } from '../../utils/reportRecencyColor';
-import { speciesMatches } from '../../utils/species';
+import { reportIdentity } from '../../utils/reportIdentity';
 import type { AnglerReport } from '../../types/user';
 
 interface Props {
-  lakeId: string;
-  filterSpecies?: string;
+  reports: AnglerReport[];
+  loading: boolean;
+  error: Error | null;
+  mode?: 'list' | 'latest';
 }
 
 const PAGE = 10;
@@ -69,52 +69,9 @@ function ReportCard({ report }: { report: AnglerReport }) {
   );
 }
 
-export function ReportFeed({ lakeId, filterSpecies }: Props) {
-  const [reports, setReports] = useState<AnglerReport[]>([]);
+export function ReportFeed({ reports, loading, error, mode = 'list' }: Props) {
   const [visibleCount, setVisibleCount] = useState(PAGE);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    setReports([]);
-    setVisibleCount(PAGE);
-
-    getDocs(query(
-      Collections.anglerReports,
-      where('lakeId', '==', lakeId),
-      where('isPublic', '==', true),
-      orderBy('reportDate', 'desc'),
-      limit(40),
-    ))
-      .then((snap) => {
-        if (cancelled) return;
-        const loaded = snap.docs.map((docSnap) => {
-          const data = docSnap.data();
-          return { ...data, reportId: data.reportId || docSnap.id };
-        });
-        const filtered = !filterSpecies || filterSpecies === 'all'
-          ? loaded
-          : loaded.filter((report) =>
-              (report.species ?? []).some((species) => speciesMatches(species, filterSpecies))
-            );
-        setReports(filtered);
-      })
-      .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e : new Error('Failed to load reports'));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [lakeId, filterSpecies]);
-
-  const visible = reports.slice(0, visibleCount);
+  const visible = mode === 'latest' ? reports.slice(0, 1) : reports.slice(0, visibleCount);
   const hasMore = visibleCount < reports.length;
 
   if (loading) {
@@ -136,17 +93,17 @@ export function ReportFeed({ lakeId, filterSpecies }: Props) {
   if (reports.length === 0) {
     return (
       <div className="rounded-lg bg-castiq-blue p-6 text-center text-sm text-castiq-muted">
-        No reports yet for this lake. Be the first to submit one!
+        No recent reports
       </div>
     );
   }
 
   return (
     <div className="space-y-3">
-      {visible.map((r, i) => (
-        <ReportCard key={r.reportId ?? i} report={r} />
+      {visible.map((r) => (
+        <ReportCard key={reportIdentity(r)} report={r} />
       ))}
-      {hasMore && (
+      {mode === 'list' && hasMore && (
         <button
           type="button"
           onClick={() => setVisibleCount((count) => count + PAGE)}

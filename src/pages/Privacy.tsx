@@ -1,11 +1,10 @@
-import { PublicShell } from '../components/layout/PublicShell';
 import { PageContainer, PageHeader, SourceFooter } from '../components/ui/Chrome';
 import { usePageTitle } from '../hooks/usePageTitle';
 
 export function Privacy() {
   usePageTitle('Privacy');
   return (
-    <PublicShell>
+    <>
       {/* Legal review required before this copy is treated as a privacy policy. */}
       <PageContainer className="max-w-3xl">
         <PageHeader
@@ -49,6 +48,6 @@ export function Privacy() {
           <SourceFooter>This page is a product draft and still needs legal review.</SourceFooter>
         </div>
       </PageContainer>
-    </PublicShell>
+    </>
   );
 }
