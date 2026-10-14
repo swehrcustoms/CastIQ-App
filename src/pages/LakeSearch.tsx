@@ -6,7 +6,8 @@ import { SearchResultCard } from '../components/search/SearchResultCard';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { useLakeSearch } from '../hooks/useLakeSearch';
 import type { LakeSearchFilters } from '../hooks/useLakeSearch';
-import { compareLakesByLatestReport } from '../utils/lakeSort';
+import { useSearchReportRecency } from '../hooks/useSearchReportRecency';
+import { compareSearchLakes, lakeWithReportRecency } from '../utils/lakeSort';
 
 export function LakeSearch() {
   const [params, setParams] = useSearchParams();
@@ -15,6 +16,7 @@ export function LakeSearch() {
   const [showFilters, setShowFilters] = useState(false);
 
   const { results, loading, approximate } = useLakeSearch(query, filters);
+  const recency = useSearchReportRecency(results.map((lake) => lake.id));
 
   // Sync URL query param
   useEffect(() => {
@@ -25,13 +27,9 @@ export function LakeSearch() {
     }
   }, [query, setParams]);
 
-  const sorted = [...results].sort((a, b) => {
-    if (query) {
-      const score = (a.matchScore ?? 99) - (b.matchScore ?? 99);
-      if (score !== 0) return score;
-    }
-    return compareLakesByLatestReport(a, b);
-  });
+  const sorted = results
+    .map((lake) => lakeWithReportRecency(lake, recency))
+    .sort(compareSearchLakes);
 
   return (
     <div className="flex h-[calc(100dvh-8rem)] flex-col bg-castiq-blue-dark">
@@ -67,7 +65,7 @@ export function LakeSearch() {
                   ? `${results.length} closest name${results.length !== 1 ? 's' : ''}`
                   : `${results.length} lake${results.length !== 1 ? 's' : ''} found`
               : results.length > 0
-                ? 'Top Minnesota lakes'
+                ? 'Newest reports first'
                 : 'No lakes loaded yet'}
         </p>
       </div>

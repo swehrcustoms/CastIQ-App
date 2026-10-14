@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { chipsForLake, speciesShownForLake } from '../src/utils/species';
-import { compareLakesByLatestReport } from '../src/utils/lakeSort';
+import { compareLakesByLatestReport, compareSearchLakes, recencyFromReports } from '../src/utils/lakeSort';
 import { consolidatedReports, latestReportsBySpecies, reportNote, uniqueReports } from '../src/utils/reportIdentity';
 import { PLAN_PRICES, priceFor, tierHasEntitlement } from '../src/data/pricing';
 import type { AnglerReport } from '../src/types/user';
@@ -17,6 +17,31 @@ test('search sort uses newest report date and puts lakes without reports last', 
   const none = lake({ id: 'c', name: 'Ada', lastReportDate: null });
   const ranked = [older, none, newer].sort(compareLakesByLatestReport);
   assert.deepEqual(ranked.map((item) => item.name), ['Leech', 'Cedar', 'Ada']);
+});
+
+test('search results put the newest report first and keep a closer name when dates match', () => {
+  const now = Date.UTC(2026, 9, 14);
+  const older = { seconds: Math.floor(Date.UTC(2026, 7, 1) / 1000), toDate: () => new Date(Date.UTC(2026, 7, 1)) };
+  const newer = { seconds: Math.floor(Date.UTC(2026, 9, 13) / 1000), toDate: () => new Date(Date.UTC(2026, 9, 13)) };
+  const ranked = [
+    { id: 'old', name: 'Mille Lacs', lastReportDate: older, matchScore: 0 },
+    { id: 'new', name: 'Minnetonka', lastReportDate: newer, matchScore: 2 },
+    { id: 'none', name: 'Ada', lastReportDate: null, matchScore: 0 },
+  ].sort(compareSearchLakes);
+  assert.deepEqual(ranked.map((item) => item.name), ['Minnetonka', 'Mille Lacs', 'Ada']);
+
+  const sameDay = [
+    { id: 'weak', name: 'Lake Minnie', lastReportDate: newer, matchScore: 4 },
+    { id: 'exact', name: 'Minnetonka', lastReportDate: newer, matchScore: 0 },
+  ].sort(compareSearchLakes);
+  assert.equal(sameDay[0].name, 'Minnetonka');
+
+  const live = recencyFromReports(
+    [{ reportDate: newer }, { reportDate: older }],
+    now,
+  );
+  assert.equal(live.reportCount7d, 1);
+  assert.equal(live.lastReportDate, newer);
 });
 
 test('equal report dates tie-break by lake name', () => {

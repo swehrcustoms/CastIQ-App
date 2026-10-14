@@ -3,6 +3,7 @@ import type { Lake } from '../../types/lake';
 import type { WithId } from '../../types/common';
 import { lakePlaceLabel } from '../../services/dnrLakeSearch';
 import { mapboxStaticUrl } from '../../utils/geoUtils';
+import { toDate } from '../../utils/dates';
 import { formatReportAge, getPinColor } from '../../utils/reportRecencyColor';
 
 const TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined;
@@ -14,9 +15,7 @@ interface Props {
 export function SearchResultCard({ lake }: Props) {
   const navigate = useNavigate();
 
-  const lastReport: Date | null = lake.lastReportDate
-    ? ((lake.lastReportDate as unknown as { toDate?: () => Date }).toDate?.() ?? null)
-    : null;
+  const lastReport = toDate(lake.lastReportDate);
   const pinColor = getPinColor(lastReport);
 
   const thumbnailUrl = TOKEN
