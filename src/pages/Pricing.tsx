@@ -39,21 +39,27 @@ export function Pricing() {
 
       <ul className="grid gap-4 lg:grid-cols-2">
         {PLANS.map((plan) => {
-          const price = priceFor(plan.tier, interval);
+          const monthly = priceFor(plan.tier, 'monthly');
+          const annual = priceFor(plan.tier, 'annual');
           return (
             <li key={plan.tier}>
               <AppCard className={`flex h-full flex-col ${plan.tier === 'premium' ? 'ring-1 ring-castiq-teal' : ''}`}>
                 <h2 className="text-lg font-semibold text-castiq-white">{plan.name}</h2>
-                <p className="mt-1 text-2xl font-bold text-castiq-teal">{price.display}</p>
+                <p className={`mt-1 text-2xl font-bold ${interval === 'monthly' ? 'text-castiq-teal' : 'text-castiq-white'}`}>
+                  {monthly.display}
+                </p>
                 <p className="mt-2 text-sm text-castiq-muted">{plan.subtitle}</p>
                 {'inherits' in plan && plan.inherits && (
                   <p className="mt-4 text-sm font-medium text-castiq-white">{plan.inherits}</p>
                 )}
-                <ul className="mt-3 flex-1 space-y-2 text-sm text-castiq-white">
+                <ul className="mt-3 flex-1 list-disc space-y-2 pl-5 text-sm text-castiq-white">
                   {plan.bullets.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
+                <p className={`mt-4 text-sm font-medium ${interval === 'annual' ? 'text-castiq-teal' : 'text-castiq-white'}`}>
+                  Annual plan: {annual.display}
+                </p>
                 <button
                   type="button"
                   className="ciq-btn-primary mt-5"

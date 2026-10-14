@@ -3,7 +3,16 @@ import test from 'node:test';
 import { chipsForLake, speciesShownForLake } from '../src/utils/species';
 import { compareLakesByLatestReport, compareSearchLakes, recencyFromReports } from '../src/utils/lakeSort';
 import { consolidatedReports, latestReportsBySpecies, reportNote, uniqueReports } from '../src/utils/reportIdentity';
-import { PLAN_PRICES, priceFor, tierHasEntitlement } from '../src/data/pricing';
+import {
+  PLAN_PRICES,
+  PLANS,
+  PREMIUM_BULLETS,
+  PRICING_DISCLAIMER,
+  PRICING_HERO,
+  STANDARD_BULLETS,
+  priceFor,
+  tierHasEntitlement,
+} from '../src/data/pricing';
 import type { AnglerReport } from '../src/types/user';
 import type { Lake } from '../src/types/lake';
 
@@ -248,6 +257,27 @@ test('four approved prices and premium inheritance', () => {
   assert.deepEqual(PLAN_PRICES.map((price) => price.cents), [499, 3999, 899, 6999]);
   assert.equal(priceFor('standard', 'annual').display, '$39.99/year');
   assert.equal(priceFor('premium', 'monthly').display, '$8.99/month');
+  assert.equal(PRICING_HERO.title, "Find out what's biting.");
+  assert.match(PRICING_HERO.description, /spend less time searching for information and more time fishing/);
+  assert.equal(PLANS[0].subtitle, 'Everything you need to plan your next fishing trip.');
+  assert.equal(PLANS[1].subtitle, 'Get more insights before you hit the water.');
+  assert.equal(PLANS[1].inherits, 'Everything in Standard, plus:');
+  assert.deepEqual([...STANDARD_BULLETS], [
+    'Lake-specific and species-specific fishing reports',
+    'Reported depths, lures, and techniques',
+    'Water conditions and bottom structure, where available',
+    'Seasonal ice reports, where available',
+    'Easy lake and species search',
+  ]);
+  assert.deepEqual([...PREMIUM_BULLETS], [
+    'Alerts for new reports on your favorite lakes',
+    'Extended fishing report history',
+    'Advanced lake and species filters',
+    'Compare conditions across lakes',
+    'Personalized saved-lake dashboard',
+    'Historical fishing trends where data is available',
+  ]);
+  assert.match(PRICING_DISCLAIMER, /especially when ice fishing/);
   assert.equal(tierHasEntitlement('standard', 'fishing_reports'), true);
   assert.equal(tierHasEntitlement('standard', 'saved_lake_dashboard'), false);
   assert.equal(tierHasEntitlement('premium', 'saved_lake_dashboard'), true);
