@@ -43,6 +43,32 @@ export function latestReportsBySpecies(reports: AnglerReport[]): { species: stri
     .sort((a, b) => reportTime(b.report) - reportTime(a.report));
 }
 
+/** Species that share one report stay on one card instead of repeating the same details. */
+export function consolidatedReports(reports: AnglerReport[]): { species: string[]; report: AnglerReport }[] {
+  const groups = new Map<string, { species: string[]; report: AnglerReport }>();
+  for (const item of latestReportsBySpecies(reports)) {
+    const key = item.report.reportId || reportIdentity(item.report);
+    const group = groups.get(key);
+    if (group) group.species.push(item.species);
+    else groups.set(key, { species: [item.species], report: item.report });
+  }
+  return [...groups.values()];
+}
+
+/** Keep one written note when the summary repeats the conditions text. */
+export function reportNote(report: Pick<AnglerReport, 'conditions' | 'aiSummary'>): string | null {
+  const conditions = report.conditions?.trim() ?? '';
+  const summary = report.aiSummary?.trim() ?? '';
+  if (!conditions && !summary) return null;
+  if (!conditions || !summary) return conditions || summary;
+  const left = conditions.toLowerCase();
+  const right = summary.toLowerCase();
+  if (left === right || left.includes(right) || right.includes(left)) {
+    return conditions.length >= summary.length ? conditions : summary;
+  }
+  return `${conditions}\n${summary}`;
+}
+
 export function uniqueReports<T extends AnglerReport>(reports: T[]): T[] {
   const seen = new Set<string>();
   const unique: T[] = [];

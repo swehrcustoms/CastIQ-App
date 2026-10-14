@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { compareLakesByLatestReport } from '../src/utils/lakeSort';
-import { latestReportsBySpecies, uniqueReports } from '../src/utils/reportIdentity';
+import { consolidatedReports, latestReportsBySpecies, reportNote, uniqueReports } from '../src/utils/reportIdentity';
 import { PLAN_PRICES, priceFor, tierHasEntitlement } from '../src/data/pricing';
 import type { AnglerReport } from '../src/types/user';
 import type { Lake } from '../src/types/lake';
@@ -130,6 +130,41 @@ test('each species keeps its newest report', () => {
   assert.equal(walleye?.report.reportId, 'new-walleye');
   assert.equal(pike?.report.reportId, 'pike');
   assert.equal(latest[0].species, 'walleye');
+});
+
+test('one report that names two species is shown once', () => {
+  const stamp = { seconds: 20, toDate: () => new Date(20_000) };
+  const report = {
+    reportId: 'lotw',
+    lakeId: 'LOTW-MN',
+    lakeName: 'Lake of the Woods',
+    sourceId: 'seed_demo',
+    userId: null,
+    reportDate: stamp,
+    species: ['walleye', 'sauger'],
+    lures: ['jig', 'minnow'],
+    colors: ['glow', 'orange'],
+    depthFt: 28,
+    waterTempF: 52,
+    conditions: 'South shore mud. Vertical jigging producing limits of eaters.',
+    technique: 'Vertical jig',
+    timeOfDay: 'all day' as const,
+    aiSummary: 'South shore mud. Vertical jigging producing limits of eaters.',
+    userSubmitted: false,
+    isPublic: true,
+    verified: false,
+    upvotes: 0,
+    photoUrl: null,
+    rawText: '',
+    confidenceScore: 0,
+    structureType: 'mud',
+    createdAt: stamp,
+    updatedAt: stamp,
+  } as AnglerReport;
+  const cards = consolidatedReports([report]);
+  assert.equal(cards.length, 1);
+  assert.deepEqual(cards[0].species.sort(), ['sauger', 'walleye']);
+  assert.equal(reportNote(report), report.conditions);
 });
 
 test('four approved prices and premium inheritance', () => {

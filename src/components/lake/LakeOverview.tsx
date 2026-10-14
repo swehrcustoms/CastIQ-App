@@ -1,5 +1,5 @@
 import { formatRelative, formatTimestamp, toDate } from '../../utils/dates';
-import { latestReportsBySpecies } from '../../utils/reportIdentity';
+import { consolidatedReports, reportNote } from '../../utils/reportIdentity';
 import { speciesLabel } from '../../utils/species';
 import { SourceAttribution } from '../shared/SourceAttribution';
 import { LoadingSpinner } from '../shared/LoadingSpinner';
@@ -14,49 +14,53 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-function textOrMissing(value: string | null | undefined): string {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : 'Not recorded on this report';
+function noteAlreadyIncludes(note: string, value: string): boolean {
+  const text = note.toLowerCase();
+  const wanted = value.toLowerCase().trim();
+  if (wanted.length < 4) return false;
+  if (text.includes(wanted)) return true;
+  const stem = wanted.replace(/ing\b/g, '').trim();
+  return stem.length >= 4 && text.includes(stem);
 }
 
-function ReportedTactic({ report }: { report: AnglerReport }) {
-  const lures = report.lures?.length ? report.lures.join(', ') : 'Not recorded on this report';
-  const colors = report.colors?.length ? report.colors.join(', ') : 'Not recorded on this report';
-  return (
-    <div className="mt-4 border-t border-white/10 pt-4">
-      <h3 className="text-sm font-semibold text-castiq-white">Most recent tactic</h3>
-      <p className="mt-2 text-sm text-castiq-white">{textOrMissing(report.technique)}</p>
-      <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <Field label="Lures" value={lures} />
-        <Field label="Colors" value={colors} />
-        <Field label="Structure" value={textOrMissing(report.structureType)} />
-        <Field label="Target depth" value={report.depthFt != null ? `${report.depthFt} ft` : 'Not recorded on this report'} />
-        <Field label="Time of day" value={textOrMissing(report.timeOfDay)} />
-      </dl>
-    </div>
-  );
+function recordedFields(report: AnglerReport, note: string | null): { label: string; value: string }[] {
+  const fields: { label: string; value: string }[] = [];
+  if (report.waterTempF != null) fields.push({ label: 'Water temperature', value: `${report.waterTempF}°F` });
+  if (report.structureType?.trim()) fields.push({ label: 'Structure', value: report.structureType.trim() });
+  if (report.depthFt != null) fields.push({ label: 'Target depth', value: `${report.depthFt} ft` });
+  if (report.timeOfDay?.trim()) fields.push({ label: 'Time of day', value: report.timeOfDay });
+  const technique = report.technique?.trim();
+  if (technique && !(note && noteAlreadyIncludes(note, technique))) {
+    fields.push({ label: 'Tactic', value: technique });
+  }
+  if (report.lures?.length) fields.push({ label: 'Lures', value: report.lures.join(', ') });
+  if (report.colors?.length) fields.push({ label: 'Colors', value: report.colors.join(', ') });
+  return fields;
 }
 
-function SpeciesReport({ species, report }: { species: string; report: AnglerReport }) {
+function SpeciesReport({ species, report }: { species: string[]; report: AnglerReport }) {
   const reportDate = toDate(report.reportDate);
+  const note = reportNote(report);
+  const fields = recordedFields(report, note);
+  const title = species
+    .filter((name) => name !== 'unspecified')
+    .map((name) => speciesLabel(name))
+    .join(', ') || 'Species not listed';
+
   return (
     <article className="rounded-lg bg-castiq-blue p-4">
-      <h2 className="text-sm font-semibold text-castiq-white">
-        {species === 'unspecified' ? 'Species not listed' : speciesLabel(species)}
-      </h2>
+      <h2 className="text-sm font-semibold text-castiq-white">{title}</h2>
       <p className="mt-1 text-xs text-castiq-muted">
-        Most recent report {formatRelative(reportDate)} · {formatTimestamp(reportDate)}
+        Latest report {formatRelative(reportDate)} · {formatTimestamp(reportDate)}
       </p>
-      <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <Field label="Lures" value={report.lures?.length ? report.lures.join(', ') : 'Not recorded on this report'} />
-        <Field label="Colors" value={report.colors?.length ? report.colors.join(', ') : 'Not recorded on this report'} />
-        <Field label="Water temperature" value={report.waterTempF != null ? `${report.waterTempF}°F` : 'Not recorded on this report'} />
-        <Field label="Structure" value={textOrMissing(report.structureType)} />
-        <Field label="Target depth" value={report.depthFt != null ? `${report.depthFt} ft` : 'Not recorded on this report'} />
-        <Field label="Time of day" value={textOrMissing(report.timeOfDay)} />
-      </dl>
-      {report.conditions?.trim() && <p className="mt-3 text-sm text-castiq-muted">{report.conditions}</p>}
-      <ReportedTactic report={report} />
+      {note && <p className="mt-3 text-sm text-castiq-white">{note}</p>}
+      {fields.length > 0 && (
+        <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {fields.map((field) => (
+            <Field key={field.label} label={field.label} value={field.value} />
+          ))}
+        </dl>
+      )}
       <div className="mt-3">
         <SourceAttribution
           sourceName={report.sourceId ?? (report.userSubmitted ? 'Angler report' : 'Unknown')}
@@ -78,7 +82,7 @@ export function LakeOverview({
   loading: boolean;
   error: Error | null;
 }) {
-  const latest = latestReportsBySpecies(reports);
+  const latest = consolidatedReports(reports);
 
   return (
     <div className="space-y-4">
@@ -95,12 +99,12 @@ export function LakeOverview({
       {!loading && !error && latest.length === 0 && (
         <p className="rounded-lg bg-castiq-blue px-4 py-3 text-sm text-castiq-muted">
           {species === 'all'
-            ? 'No public report has been logged for this lake yet. Conditions and tactics appear here as soon as one is saved.'
+            ? 'No public report has been logged for this lake yet.'
             : `No public report has been logged for ${speciesLabel(species).toLowerCase()} on this lake yet.`}
         </p>
       )}
       {!loading && !error && latest.map((item) => (
-        <SpeciesReport key={`${item.species}-${item.report.reportId}`} species={item.species} report={item.report} />
+        <SpeciesReport key={`${item.species.join('-')}-${item.report.reportId}`} species={item.species} report={item.report} />
       ))}
     </div>
   );
