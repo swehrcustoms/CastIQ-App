@@ -1,57 +1,48 @@
-const CACHE_NAME = 'castiq-v2';
-const STATIC_ASSETS = ['/', '/index.html'];
+const CACHE_NAME = 'castiq-v3';
 
-// Install: pre-cache static shell
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
-  );
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
-// Activate: clean up old cache versions
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-      )
-    )
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then(() => self.clients.claim()),
   );
-  self.clients.claim();
 });
 
-// Fetch: network-first for API routes, cache-first for static assets
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Only handle GET requests from the same origin
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
 
-  // Firebase + Functions calls: network-first (do not cache)
-  if (
+  const networkFirst =
+    request.mode === 'navigate' ||
+    url.pathname === '/' ||
+    url.pathname === '/index.html' ||
+    url.pathname === '/sw.js' ||
     url.pathname.startsWith('/api/') ||
-    url.pathname.startsWith('/__/') ||
-    url.hostname.includes('firestore') ||
-    url.hostname.includes('cloudfunctions')
-  ) {
+    url.pathname.startsWith('/__/');
+
+  if (networkFirst) {
     event.respondWith(fetch(request).catch(() => caches.match(request)));
     return;
   }
 
-  // Static assets: cache-first with network fallback
   event.respondWith(
     caches.match(request).then(
       (cached) =>
         cached ||
         fetch(request).then((response) => {
-          if (response.status === 200) {
+          if (response.status === 200 && url.pathname.startsWith('/assets/')) {
             const clone = response.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           }
           return response;
-        })
-    )
+        }),
+    ),
   );
 });
