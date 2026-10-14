@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { getDocs, limit, orderBy, query } from 'firebase/firestore';
-import { functions, storage } from '../services/firebase';
+import { doc, getDocs, limit, orderBy, query, serverTimestamp, setDoc } from 'firebase/firestore';
+import { storage } from '../services/firebase';
 import { Collections } from '../services/firestore';
 import { useAuth } from '../hooks/useAuth';
 import { useLakeSearch } from '../hooks/useLakeSearch';
@@ -32,25 +31,6 @@ const TIME_OPTIONS: TimeOfDay[] = [
 ];
 
 const SPECIES_SUBMIT = SPECIES_OPTIONS.filter((s) => s.id !== 'all');
-
-const submitReportFn = httpsCallable<
-  {
-    lakeId: string;
-    lakeName: string;
-    species: string[];
-    lures: string[];
-    colors: string[];
-    depthFt: number | null;
-    waterTempF: number | null;
-    conditions: string;
-    technique: string;
-    timeOfDay: TimeOfDay;
-    structureType: string | null;
-    photoUrl: string | null;
-    isPublic: boolean;
-  },
-  { reportId: string }
->(functions, 'userSubmissionService');
 
 export function SubmitReport() {
   const { user } = useAuth();
@@ -142,9 +122,15 @@ export function SubmitReport() {
         photoUrl = await getDownloadURL(storageRef);
       }
 
-      await submitReportFn({
+      const reportRef = doc(Collections.anglerReports);
+      const now = serverTimestamp();
+      await setDoc(reportRef, {
+        reportId: reportRef.id,
         lakeId: selectedLake.id,
         lakeName: selectedLake.name,
+        sourceId: null,
+        userId: user.uid,
+        reportDate: now,
         species,
         lures: lures
           .split(',')
@@ -159,9 +145,17 @@ export function SubmitReport() {
         conditions: conditions.trim(),
         technique: technique.trim(),
         timeOfDay,
-        structureType: structureType.trim() || null,
-        photoUrl,
+        aiSummary: '',
+        userSubmitted: true,
         isPublic,
+        verified: false,
+        upvotes: 0,
+        photoUrl,
+        rawText: conditions.trim(),
+        confidenceScore: 0,
+        structureType: structureType.trim() || null,
+        createdAt: now,
+        updatedAt: now,
       });
 
       navigate(`/lake/${selectedLake.id}`, { replace: true });

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { compareLakesByLatestReport } from '../src/utils/lakeSort';
-import { uniqueReports } from '../src/utils/reportIdentity';
+import { latestReportsBySpecies, uniqueReports } from '../src/utils/reportIdentity';
 import { PLAN_PRICES, priceFor, tierHasEntitlement } from '../src/data/pricing';
 import type { AnglerReport } from '../src/types/user';
 import type { Lake } from '../src/types/lake';
@@ -91,6 +91,45 @@ test('different reports stay separate', () => {
     { ...base, reportId: '2', aiSummary: 'Evening', reportDate: { seconds: 20, toDate: () => new Date(20_000) } },
   ] as AnglerReport[]);
   assert.equal(reports.length, 2);
+});
+
+test('each species keeps its newest report', () => {
+  const older = { seconds: 10, toDate: () => new Date(10_000) };
+  const newer = { seconds: 30, toDate: () => new Date(30_000) };
+  const base = {
+    lakeId: '27-0133-00',
+    lakeName: 'Lake Minnetonka',
+    sourceId: null,
+    userId: 'angler',
+    lures: ['jig'],
+    colors: ['chartreuse'],
+    depthFt: 12,
+    waterTempF: 55,
+    conditions: '',
+    technique: 'Drag',
+    timeOfDay: 'morning' as const,
+    aiSummary: '',
+    userSubmitted: true,
+    isPublic: true,
+    verified: false,
+    upvotes: 0,
+    photoUrl: null,
+    rawText: '',
+    confidenceScore: 0,
+    structureType: 'point',
+    createdAt: newer,
+    updatedAt: newer,
+  };
+  const latest = latestReportsBySpecies([
+    { ...base, reportId: 'old-walleye', species: ['walleye'], reportDate: older, technique: 'Old' },
+    { ...base, reportId: 'new-walleye', species: ['walleye'], reportDate: newer, technique: 'New' },
+    { ...base, reportId: 'pike', species: ['northern_pike'], reportDate: older, technique: 'Pike' },
+  ] as AnglerReport[]);
+  const walleye = latest.find((item) => item.species === 'walleye');
+  const pike = latest.find((item) => item.species === 'northern_pike');
+  assert.equal(walleye?.report.reportId, 'new-walleye');
+  assert.equal(pike?.report.reportId, 'pike');
+  assert.equal(latest[0].species, 'walleye');
 });
 
 test('four approved prices and premium inheritance', () => {

@@ -1,46 +1,49 @@
 import { useEffect, useState } from 'react';
-import { getDocs, limit, orderBy, query, where } from 'firebase/firestore';
+import { limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { Collections } from '../services/firestore';
 import { uniqueReports } from '../utils/reportIdentity';
 import type { AnglerReport } from '../types/user';
 
 export function useLakeReports(lakeId: string | undefined) {
   const [reports, setReports] = useState<AnglerReport[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(lakeId));
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!lakeId) return;
-    let cancelled = false;
+    if (!lakeId) {
+      setReports([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
-    setReports([]);
 
-    getDocs(query(
+    const reportsQuery = query(
       Collections.anglerReports,
       where('lakeId', '==', lakeId),
       where('isPublic', '==', true),
       orderBy('reportDate', 'desc'),
       limit(40),
-    ))
-      .then((snap) => {
-        if (cancelled) return;
+    );
+
+    return onSnapshot(
+      reportsQuery,
+      (snap) => {
         const loaded = snap.docs.map((docSnap) => {
           const data = docSnap.data() as AnglerReport;
           return { ...data, reportId: data.reportId || docSnap.id };
         });
         setReports(uniqueReports(loaded));
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err : new Error('Failed to load reports'));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
+        setLoading(false);
+      },
+      (err: unknown) => {
+        console.error(err);
+        setReports([]);
+        setError(err instanceof Error ? err : new Error('Failed to load reports'));
+        setLoading(false);
+      },
+    );
   }, [lakeId]);
 
   return { reports, loading, error };

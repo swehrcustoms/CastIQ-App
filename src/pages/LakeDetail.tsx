@@ -24,7 +24,7 @@ export function LakeDetail() {
   const tabParam = searchParams.get('tab');
   const activeTab: LakeTab = isLakeTab(tabParam) ? tabParam : 'overview';
   const [selectedSpecies, setSelectedSpecies] = useState('all');
-  const { reports, loading: reportsLoading } = useLakeReports(lakeId);
+  const { reports, loading: reportsLoading, error: reportsError } = useLakeReports(lakeId);
   const visibleReports = selectedSpecies === 'all'
     ? reports
     : reports.filter((report) => (report.species ?? []).some((species) => speciesMatches(species, selectedSpecies)));
@@ -123,10 +123,10 @@ export function LakeDetail() {
               <div className="lg:col-span-2 space-y-4">
                 <SpeciesChips selected={selectedSpecies} onChange={setSelectedSpecies} />
                 <LakeOverview
-                  lake={lake}
                   species={selectedSpecies}
-                  report={visibleReports[0] ?? null}
+                  reports={visibleReports}
                   loading={reportsLoading}
+                  error={reportsError}
                 />
               </div>
             </div>
