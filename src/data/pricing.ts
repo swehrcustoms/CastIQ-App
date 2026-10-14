@@ -92,6 +92,12 @@ export function priceFor(tier: PlanTier, interval: BillingInterval): PlanPrice {
   return price;
 }
 
+/** Monthly equivalent of the annual charge. This is not a separate monthly bill. */
+export function annualPricePerMonth(tier: PlanTier): { cents: number; display: string } {
+  const cents = Math.round(priceFor(tier, 'annual').cents / 12);
+  return { cents, display: `$${(cents / 100).toFixed(2)}/month` };
+}
+
 export function tierHasEntitlement(tier: PlanTier, key: EntitlementKey): boolean {
   return ENTITLEMENTS[key][tier];
 }

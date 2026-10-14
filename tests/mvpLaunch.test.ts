@@ -5,6 +5,7 @@ import { pickRegulationHit } from '../src/services/dnrLakeSearch';
 import { compareLakesByLatestReport, compareSearchLakes, recencyFromReports } from '../src/utils/lakeSort';
 import { consolidatedReports, latestReportsBySpecies, reportNote, uniqueReports } from '../src/utils/reportIdentity';
 import {
+  annualPricePerMonth,
   PLAN_PRICES,
   PLANS,
   PREMIUM_BULLETS,
@@ -272,8 +273,11 @@ test('a lake regulation lookup stays on the water that was named', () => {
 
 test('four approved prices and premium inheritance', () => {
   assert.deepEqual(PLAN_PRICES.map((price) => price.cents), [499, 3999, 899, 6999]);
+  assert.equal(priceFor('standard', 'monthly').display, '$4.99/month');
   assert.equal(priceFor('standard', 'annual').display, '$39.99/year');
   assert.equal(priceFor('premium', 'monthly').display, '$8.99/month');
+  assert.deepEqual(annualPricePerMonth('standard'), { cents: 333, display: '$3.33/month' });
+  assert.deepEqual(annualPricePerMonth('premium'), { cents: 583, display: '$5.83/month' });
   assert.equal(PRICING_HERO.title, "Find out what's biting.");
   assert.match(PRICING_HERO.description, /spend less time searching for information and more time fishing/);
   assert.equal(PLANS[0].subtitle, 'Everything you need to plan your next fishing trip.');

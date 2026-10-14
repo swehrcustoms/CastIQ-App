@@ -7,6 +7,7 @@ import {
   PLANS,
   PRICING_DISCLAIMER,
   PRICING_HERO,
+  annualPricePerMonth,
   priceFor,
   type BillingInterval,
 } from '../data/pricing';
@@ -41,13 +42,22 @@ export function Pricing() {
         {PLANS.map((plan) => {
           const monthly = priceFor(plan.tier, 'monthly');
           const annual = priceFor(plan.tier, 'annual');
+          const annualPerMonth = annualPricePerMonth(plan.tier);
           return (
             <li key={plan.tier}>
               <AppCard className={`flex h-full flex-col ${plan.tier === 'premium' ? 'ring-1 ring-castiq-teal' : ''}`}>
                 <h2 className="text-lg font-semibold text-castiq-white">{plan.name}</h2>
-                <p className={`mt-1 text-2xl font-bold ${interval === 'monthly' ? 'text-castiq-teal' : 'text-castiq-white'}`}>
-                  {monthly.display}
-                </p>
+                {interval === 'monthly' ? (
+                  <p className="mt-1 text-2xl font-bold text-castiq-teal">{monthly.display}</p>
+                ) : (
+                  <div className="mt-1">
+                    <p className="text-lg font-semibold text-red-400 line-through decoration-red-500 decoration-2">
+                      {monthly.display}
+                    </p>
+                    <p className="text-2xl font-bold text-castiq-teal">{annualPerMonth.display}</p>
+                    <p className="text-xs text-castiq-muted">Annual plan broken down by month. Billed {annual.display}.</p>
+                  </div>
+                )}
                 <p className="mt-2 text-sm text-castiq-muted">{plan.subtitle}</p>
                 {'inherits' in plan && plan.inherits && (
                   <p className="mt-4 text-sm font-medium text-castiq-white">{plan.inherits}</p>
