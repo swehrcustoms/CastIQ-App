@@ -1,9 +1,6 @@
 const TABS = [
   { id: 'overview', label: 'Overview' },
-  { id: 'reports', label: 'Reports' },
   { id: 'surveys', label: 'Surveys & Stocking' },
-  { id: 'ice', label: 'Ice' },
-  { id: 'water', label: 'Water Quality' },
 ] as const;
 
 export type LakeTab = (typeof TABS)[number]['id'];
@@ -15,10 +12,9 @@ export function isLakeTab(value: string | null): value is LakeTab {
 interface Props {
   active: LakeTab;
   onSelect: (tab: LakeTab) => void;
-  reportCount?: number;
 }
 
-export function LakeTabNav({ active, onSelect, reportCount }: Props) {
+export function LakeTabNav({ active, onSelect }: Props) {
   return (
     <div className="flex gap-1 overflow-x-auto border-b border-castiq-blue pb-0 scrollbar-hide">
       {TABS.map((tab) => (
@@ -31,9 +27,7 @@ export function LakeTabNav({ active, onSelect, reportCount }: Props) {
               : 'text-castiq-muted hover:text-castiq-white'
           }`}
         >
-          {tab.label === 'Reports' && reportCount !== undefined
-            ? `Reports (${reportCount})`
-            : tab.label}
+          {tab.label}
           {active === tab.id && (
             <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-castiq-teal" />
           )}

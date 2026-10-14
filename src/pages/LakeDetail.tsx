@@ -1,23 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { fetchDnrLake } from '../services/dnrLakeSearch';
 import { db } from '../services/firebase';
 import { LakeHeader } from '../components/lake/LakeHeader';
 import { LakeOverview } from '../components/lake/LakeOverview';
-import { LakeTabNav } from '../components/lake/LakeTabNav';
-import { ReportFeed } from '../components/lake/ReportFeed';
-import { LakeHealthSnapshot } from '../components/lake/LakeHealthSnapshot';
-import { WeatherStrip } from '../components/shared/WeatherStrip';
+import { LakeTabNav, isLakeTab, type LakeTab } from '../components/lake/LakeTabNav';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { SpeciesChips } from '../components/shared/SpeciesChips';
-import { FavoriteButton } from '../components/lake/FavoriteButton';
 import { SurveysStockingPanel } from '../components/lake/SurveysStockingPanel';
-import { WaterQualityPanel } from '../components/lake/WaterQualityPanel';
-import { useWeather } from '../hooks/useWeather';
 import { useLakeReports } from '../hooks/useLakeReports';
 import { speciesMatches } from '../utils/species';
-import { isLakeTab, type LakeTab } from '../components/lake/LakeTabNav';
 import type { Lake } from '../types/lake';
 import type { WithId } from '../types/common';
 
@@ -31,8 +24,7 @@ export function LakeDetail() {
   const tabParam = searchParams.get('tab');
   const activeTab: LakeTab = isLakeTab(tabParam) ? tabParam : 'overview';
   const [selectedSpecies, setSelectedSpecies] = useState('all');
-  const { weather, loading: weatherLoading, refetch: refetchWeather } = useWeather();
-  const { reports, loading: reportsLoading, error: reportsError } = useLakeReports(lakeId);
+  const { reports, loading: reportsLoading } = useLakeReports(lakeId);
   const visibleReports = selectedSpecies === 'all'
     ? reports
     : reports.filter((report) => (report.species ?? []).some((species) => speciesMatches(species, selectedSpecies)));
@@ -68,13 +60,6 @@ export function LakeDetail() {
   function selectTab(tab: LakeTab) {
     setSearchParams(tab === 'overview' ? {} : { tab }, { replace: true });
   }
-
-  // Fetch weather once lake is loaded
-  useEffect(() => {
-    if (lake && lakeId) {
-      refetchWeather(lakeId, lake.lat, lake.lng);
-    }
-  }, [lake, lakeId, refetchWeather]);
 
   if (loading) {
     return (
@@ -126,19 +111,10 @@ export function LakeDetail() {
           <div className="min-w-0 flex-1">
             <LakeHeader lake={lake} />
           </div>
-          <FavoriteButton lakeId={lake.id} />
-        </div>
-
-        <div className="px-4 pb-4">
-          <WeatherStrip weather={weather} loading={weatherLoading} />
         </div>
 
         <div className="px-4">
-          <LakeTabNav
-            active={activeTab}
-            onSelect={selectTab}
-            reportCount={reports.length}
-          />
+          <LakeTabNav active={activeTab} onSelect={selectTab} />
         </div>
 
         <div className="px-4 py-4">
@@ -153,14 +129,6 @@ export function LakeDetail() {
                   loading={reportsLoading}
                 />
               </div>
-              <LakeHealthSnapshot lake={lake} />
-            </div>
-          )}
-
-          {activeTab === 'reports' && (
-            <div className="space-y-4">
-              <SpeciesChips selected={selectedSpecies} onChange={setSelectedSpecies} />
-              <ReportFeed reports={visibleReports} loading={reportsLoading} error={reportsError} />
             </div>
           )}
 
@@ -172,20 +140,6 @@ export function LakeDetail() {
               <SurveysStockingPanel lakeId={lake.id} />
             </div>
           )}
-
-          {activeTab === 'ice' && (
-            <div className="rounded-lg bg-castiq-blue p-4 space-y-3">
-              <h2 className="text-sm font-semibold text-castiq-white">Ice</h2>
-              <p className="text-sm text-castiq-muted">
-                Ice conditions are highly variable. A report describes one place at one time, and no report guarantees safe ice.
-              </p>
-              <Link to="/ice" className="inline-block text-sm text-castiq-teal hover:underline">
-                Open Minnesota ice reports
-              </Link>
-            </div>
-          )}
-
-          {activeTab === 'water' && <WaterQualityPanel lakeId={lake.id} />}
         </div>
       </div>
     </div>

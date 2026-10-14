@@ -270,9 +270,9 @@ export function Login() {
         </div>
 
         <nav className="mt-6 flex justify-center gap-4 text-xs text-castiq-muted" aria-label="Product">
+          <Link to="/about" className="hover:text-castiq-teal">About</Link>
+          <Link to="/tactics" className="hover:text-castiq-teal">Tactics</Link>
           <Link to="/pricing" className="hover:text-castiq-teal">Pricing</Link>
-          <Link to="/legal/terms" className="hover:text-castiq-teal">Terms</Link>
-          <Link to="/legal/privacy" className="hover:text-castiq-teal">Privacy</Link>
         </nav>
       </div>
     </div>

@@ -1,20 +1,8 @@
-import type { ReactNode } from 'react';
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
-import { MapHome } from './pages/MapHome';
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { LakeSearch } from './pages/LakeSearch';
 import { LakeDetail } from './pages/LakeDetail';
-import { AILiveEngine } from './pages/AILiveEngine';
 import { Login } from './pages/Login';
-import { GuidePortal } from './pages/GuidePortal';
-import { SubmitReport } from './pages/SubmitReport';
-import { Regulations } from './pages/Regulations';
-import { FisheriesExplorer } from './pages/FisheriesExplorer';
-import { LakeContours } from './pages/LakeContours';
-import { BorderWaters } from './pages/BorderWaters';
 import { IceFishing } from './pages/IceFishing';
-import { Profile } from './pages/Profile';
-import { Social } from './pages/Social';
-import { Onboarding } from './pages/Onboarding';
 import { Pricing } from './pages/Pricing';
 import { Guides } from './pages/Guides';
 import { About } from './pages/About';
@@ -24,16 +12,11 @@ import { NotFound } from './pages/NotFound';
 import { ProtectedRoute } from './components/shared/ProtectedRoute';
 import { AppHeader } from './components/shared/AppHeader';
 import { AppNav } from './components/nav/AppNav';
-import { useAuth } from './hooks/useAuth';
 
-function OnboardingGate({ children }: { children: ReactNode }) {
-  const { profile, loading } = useAuth();
-  const location = useLocation();
-  const allowed = location.pathname === '/onboarding' || location.pathname === '/profile';
-  if (!loading && profile?.onboardingComplete === false && !allowed) {
-    return <Navigate to="/onboarding" replace />;
-  }
-  return <>{children}</>;
+function LakeRedirect({ tab }: { tab?: 'surveys' }) {
+  const { lakeId } = useParams();
+  const target = lakeId ? `/lake/${lakeId}${tab ? `?tab=${tab}` : ''}` : '/search';
+  return <Navigate to={target} replace />;
 }
 
 function SiteShell() {
@@ -54,9 +37,7 @@ function SiteShell() {
 function AuthenticatedShell() {
   return (
     <ProtectedRoute>
-      <OnboardingGate>
-        <SiteShell />
-      </OnboardingGate>
+      <SiteShell />
     </ProtectedRoute>
   );
 }
@@ -77,20 +58,20 @@ export default function App() {
         </Route>
 
         <Route element={<AuthenticatedShell />}>
-          <Route path="/" element={<MapHome />} />
+          <Route path="/" element={<Navigate to="/search" replace />} />
           <Route path="/search" element={<LakeSearch />} />
           <Route path="/lake/:lakeId" element={<LakeDetail />} />
-          <Route path="/lake/:lakeId/live" element={<AILiveEngine />} />
-          <Route path="/lake/:lakeId/fisheries" element={<FisheriesExplorer />} />
-          <Route path="/lake/:lakeId/contours" element={<LakeContours />} />
-          <Route path="/border-waters" element={<BorderWaters />} />
-          <Route path="/regulations" element={<Regulations />} />
-          <Route path="/submit-report" element={<SubmitReport />} />
+          <Route path="/lake/:lakeId/live" element={<LakeRedirect />} />
+          <Route path="/lake/:lakeId/fisheries" element={<LakeRedirect tab="surveys" />} />
+          <Route path="/lake/:lakeId/contours" element={<LakeRedirect />} />
+          <Route path="/border-waters" element={<Navigate to="/search" replace />} />
+          <Route path="/regulations" element={<Navigate to="/search" replace />} />
+          <Route path="/submit-report" element={<Navigate to="/search" replace />} />
           <Route path="/ice" element={<IceFishing />} />
-          <Route path="/guide" element={<GuidePortal />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/social" element={<Social />} />
-          <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/guide" element={<Navigate to="/search" replace />} />
+          <Route path="/profile" element={<Navigate to="/search" replace />} />
+          <Route path="/social" element={<Navigate to="/search" replace />} />
+          <Route path="/onboarding" element={<Navigate to="/search" replace />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

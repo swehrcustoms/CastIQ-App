@@ -1,13 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FeatureMap } from '../components/map/FeatureMap';
-import { PageContainer, PageHeader, SectionHeader, SourceFooter } from '../components/ui/Chrome';
+import { PageContainer, PageHeader, SourceFooter } from '../components/ui/Chrome';
 import { AppCard, DataFreshnessBadge, FilterChip } from '../components/ui/Data';
 import { AlertBanner, EmptyState, ErrorState, SkeletonGrid } from '../components/ui/States';
 import { useIceIntel } from '../hooks/useIceIntel';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { formatTimestamp, hoursSince, toDate } from '../utils/dates';
-import { speciesLabel } from '../utils/species';
 import type { IceReport } from '../types/events';
 import type { WithId } from '../types/common';
 
@@ -37,14 +35,9 @@ export function IceFishing() {
   const [county, setCounty] = useState('all');
   const [freshness, setFreshness] = useState<Freshness>('any');
   const [thickness, setThickness] = useState<Thickness>('any');
-  const [roadsOnly, setRoadsOnly] = useState(false);
   usePageTitle('Ice fishing');
 
   const lakesById = useMemo(() => new Map(data.lakes.map((lake) => [lake.id, lake])), [data.lakes]);
-  const openRoadLakes = useMemo(
-    () => new Set(data.roads.filter((road) => road.status === 'open').map((road) => road.lakeId)),
-    [data.roads],
-  );
   const counties = useMemo(
     () => [...new Set(data.reports.map((report) => report.county).filter(Boolean))].sort(),
     [data.reports],
@@ -63,31 +56,15 @@ export function IceFishing() {
     if (thickness === 'under6' && report.iceTotalIn >= 6) return false;
     if (thickness === 'mid' && (report.iceTotalIn < 6 || report.iceTotalIn > 12)) return false;
     if (thickness === 'over12' && report.iceTotalIn <= 12) return false;
-    if (roadsOnly && !openRoadLakes.has(report.lakeId)) return false;
     return true;
   });
-
-  const points = reports.flatMap((report) => {
-    const lake = lakesById.get(report.lakeId);
-    if (!lake || !Number.isFinite(lake.lat) || !Number.isFinite(lake.lng)) return [];
-    return [{
-      id: report.id,
-      lng: lake.lng,
-      lat: lake.lat,
-      color: report.iceTotalIn < 4 ? '#ef4444' : report.iceTotalIn < 8 ? '#eab308' : '#22c55e',
-      label: `${lake.name}, ${report.iceTotalIn} inches reported`,
-    }];
-  });
-  const mapCenter: [number, number] = points[0]
-    ? [points[0].lng, points[0].lat]
-    : [-94.5, 46.5];
 
   return (
     <PageContainer>
       <PageHeader
         eyebrow="Winter"
-        title="Ice Fishing Intelligence"
-        subtitle="Recent thickness, access, and winterkill notes. Measurements describe one place at one time."
+        title="Ice"
+        subtitle="Recent thickness reports. A measurement describes one place at one time."
       />
 
       <div className="mb-5">
@@ -142,18 +119,8 @@ export function IceFishing() {
               ] as const).map(([id, label]) => (
                 <FilterChip key={id} selected={thickness === id} onClick={() => setThickness(id)}>{label}</FilterChip>
               ))}
-              <FilterChip selected={roadsOnly} onClick={() => setRoadsOnly((value) => !value)}>
-                Open ice road
-              </FilterChip>
             </div>
           </div>
-
-          <div className="h-80 overflow-hidden rounded-xl border border-white/10">
-            <FeatureMap center={mapCenter} zoom={points.length ? 7 : 5} points={points} />
-          </div>
-          <p className="text-xs text-castiq-muted">
-            Pins use the lake’s published center, not the exact hole. Color reflects the reported total thickness only.
-          </p>
 
           {reports.length === 0 ? (
             <EmptyState
@@ -169,63 +136,6 @@ export function IceFishing() {
               ))}
             </ul>
           )}
-
-          <section>
-            <SectionHeader title="Ice roads and access" />
-            {data.roads.length === 0 ? (
-              <EmptyState title="No ice roads on file" message="Plowed roads and access status will appear here when an operator publishes them." />
-            ) : (
-              <ul className="grid gap-3 md:grid-cols-2">
-                {data.roads.map((road) => {
-                  const lake = lakesById.get(road.lakeId);
-                  return (
-                    <li key={road.id}>
-                      <AppCard>
-                        <div className="flex items-start justify-between gap-3">
-                          <h3 className="font-semibold text-castiq-white">{road.name}</h3>
-                          <span className={`text-xs uppercase ${road.status === 'open' ? 'text-castiq-green' : 'text-castiq-yellow'}`}>
-                            {road.status}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-sm text-castiq-muted">
-                          {lake ? <Link to={`/lake/${lake.id}`} className="text-castiq-teal hover:underline">{lake.name}</Link> : 'Lake not linked'}
-                          {' · '}{road.lengthMiles} mi
-                          {road.weightLimitLbs ? ` · ${road.weightLimitLbs.toLocaleString()} lb limit` : ''}
-                        </p>
-                        <p className="mt-2 text-xs text-castiq-muted">
-                          {road.operatedBy || 'Operator not listed'} · <DataFreshnessBadge date={road.lastUpdated} prefix="Updated" />
-                        </p>
-                      </AppCard>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
-
-          <section>
-            <SectionHeader title="Winterkill notes" />
-            {data.winterkill.length === 0 ? (
-              <p className="text-sm text-castiq-muted">No winterkill events are in the recent record.</p>
-            ) : (
-              <ul className="space-y-2">
-                {data.winterkill.map((event) => {
-                  const lake = lakesById.get(event.lakeId);
-                  return (
-                    <li key={event.id} className="ciq-card px-4 py-3 text-sm">
-                      <p className="font-medium text-castiq-white">
-                        {lake ? <Link to={`/lake/${lake.id}`} className="hover:text-castiq-teal">{lake.name}</Link> : 'Lake'} · {event.eventYear} · {event.severity}
-                      </p>
-                      <p className="mt-1 text-castiq-muted">
-                        {(event.affectedSpecies ?? []).map(speciesLabel).join(', ') || 'Species not listed'}
-                        {event.outcome ? ` · ${event.outcome}` : ''}
-                      </p>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
 
           <SourceFooter>
             Ice reports are crowd-sourced or agency notes stored in CastIQ. A reporter rating is that person’s assessment, not a CastIQ travel approval.
